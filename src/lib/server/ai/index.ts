@@ -1,6 +1,7 @@
 import type { AIProvider } from './types';
 import { OpenAIProvider } from './providers/openai';
 import { AnthropicProvider } from './providers/anthropic';
+import { env } from '$env/dynamic/private';
 
 export type { AIProvider, CompletionRequest, ToolDefinition, ToolSchemaFormat } from './types';
 
@@ -13,22 +14,22 @@ export type { AIProvider, CompletionRequest, ToolDefinition, ToolSchemaFormat } 
  * AI_MODEL          — model name override
  */
 export function getAIProvider(): AIProvider | null {
-	const provider = process.env.AI_PROVIDER ?? 'none';
-	const model = process.env.AI_MODEL;
+	const provider = env.AI_PROVIDER ?? 'none';
+	const model = env.AI_MODEL;
 
 	switch (provider) {
 		case 'openai': {
-			const apiKey = process.env.OPENAI_API_KEY;
+			const apiKey = env.OPENAI_API_KEY;
 			if (!apiKey) throw new Error('OPENAI_API_KEY is required for AI_PROVIDER=openai');
 			return new OpenAIProvider({
 				apiKey,
-				baseUrl: process.env.OPENAI_BASE_URL,
+				baseUrl: env.OPENAI_BASE_URL,
 				model,
 			});
 		}
 
 		case 'anthropic': {
-			const apiKey = process.env.ANTHROPIC_API_KEY;
+			const apiKey = env.ANTHROPIC_API_KEY;
 			if (!apiKey) throw new Error('ANTHROPIC_API_KEY is required for AI_PROVIDER=anthropic');
 			return new AnthropicProvider({ apiKey, model });
 		}
@@ -37,7 +38,7 @@ export function getAIProvider(): AIProvider | null {
 		case 'ollama': {
 			return new OpenAIProvider({
 				apiKey: 'ollama', // Ollama doesn't require a real key
-				baseUrl: process.env.OPENAI_BASE_URL ?? 'http://localhost:11434/v1',
+				baseUrl: env.OPENAI_BASE_URL ?? 'http://localhost:11434/v1',
 				model: model ?? 'llama3',
 			});
 		}

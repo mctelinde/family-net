@@ -14,17 +14,37 @@ function canAccess(entry: { owner: string; visibility: Visibility }, userId: str
 	return entry.visibility === 'family' || entry.owner === userId || isAdmin;
 }
 
+/**
+ * Recursively convert Date objects to ISO date strings (YYYY-MM-DD) so the
+ * data is safe to pass from SvelteKit server load functions to the client
+ * and doesn't trip up devalue serialization.
+ */
+function serializeFrontmatter(obj: Record<string, unknown>): Record<string, unknown> {
+	function walk(value: unknown): unknown {
+		if (value instanceof Date) return value.toISOString().slice(0, 10);
+		if (Array.isArray(value)) return value.map(walk);
+		if (value !== null && typeof value === 'object') {
+			return Object.fromEntries(
+				Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, walk(v)])
+			);
+		}
+		return value;
+	}
+	return walk(obj) as Record<string, unknown>;
+}
+
 function parseMeta(slug: string, data: Record<string, unknown>): NotebookEntryMeta {
+	const safe = serializeFrontmatter(data);
 	return {
 		slug,
-		title: (data.title as string) ?? slug,
-		type: ((data.type as string) ?? 'note') as WidgetType,
-		owner: (data.owner as string) ?? '',
-		visibility: ((data.visibility as string) ?? 'family') as Visibility,
-		tags: (data.tags as string[]) ?? [],
-		created: (data.created as string) ?? '',
-		updated: (data.updated as string) ?? '',
-		data,
+		title: (safe.title as string) ?? slug,
+		type: ((safe.type as string) ?? 'note') as WidgetType,
+		owner: (safe.owner as string) ?? '',
+		visibility: ((safe.visibility as string) ?? 'family') as Visibility,
+		tags: (safe.tags as string[]) ?? [],
+		created: (safe.created as string) ?? '',
+		updated: (safe.updated as string) ?? '',
+		data: safe,
 	};
 }
 

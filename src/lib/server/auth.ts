@@ -2,6 +2,7 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import type { Cookies } from '@sveltejs/kit';
 import type { AuthSession } from '$lib/types';
 import { SESSION_SECRET } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 const COOKIE_NAME = 'fn_session';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
@@ -76,7 +77,7 @@ export function clearSession(cookies: Cookies): void {
 }
 
 export function verifyApiKey(request: Request): boolean {
-	const key = process.env.AGENT_API_KEY;
+	const key = env.AGENT_API_KEY;
 	if (!key) return false;
 	const auth = request.headers.get('authorization');
 	return auth === `Bearer ${key}`;
