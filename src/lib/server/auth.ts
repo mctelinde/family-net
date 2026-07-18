@@ -1,14 +1,19 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import type { Cookies } from '@sveltejs/kit';
 import type { AuthSession } from '$lib/types';
-import { SESSION_SECRET } from '$env/static/private';
 import { env } from '$env/dynamic/private';
+
+function getSecret(): string {
+	const secret = env.SESSION_SECRET;
+	if (!secret) throw new Error('SESSION_SECRET environment variable is not set.');
+	return secret;
+}
 
 const COOKIE_NAME = 'fn_session';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 function sign(payload: string): string {
-	return createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+	return createHmac('sha256', getSecret()).update(payload).digest('base64url');
 }
 
 export function createToken(session: AuthSession): string {
