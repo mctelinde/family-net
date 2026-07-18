@@ -1,218 +1,89 @@
 <script lang="ts">
-	import { renderMarkdown } from '$lib/markdown';
+	import type { PageData } from './$types';
 
-	const starterMarkdown = `# Family Notebook
+	const TYPE_LABELS: Record<string, string> = {
+		'note': 'Note',
+		'business-plan': 'Business Plan',
+		'fitness-goals': 'Fitness Goals',
+		'finance-tracker': 'Finance Tracker',
+	};
 
-## Shared priorities
-- Build a healthy weekly routine
-- Track appointments and commitments
-- Keep long-term plans visible
+	const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
+		'note':             { bg: '#f0eff9', text: '#4f46e5' },
+		'business-plan':   { bg: '#1a1a2e', text: '#fff' },
+		'fitness-goals':   { bg: '#dcfce7', text: '#16a34a' },
+		'finance-tracker': { bg: '#eff6ff', text: '#2563eb' },
+	};
 
-## Venture planning
-1. Validate the software company idea
-2. Define product milestones
-3. Plan first customer interviews`;
-
-	let markdown = $state(starterMarkdown);
-	let notebookHtml = $derived(renderMarkdown(markdown));
-
-	function exportNotebook(): void {
-		const documentHtml = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Family Notebook Export</title>
-<style>
-body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 2rem; background: #f8fafc; color: #0f172a; }
-main { max-width: 840px; margin: 0 auto; background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08); }
-h1, h2, h3, h4, h5, h6 { margin-top: 1.5rem; }
-code { background: #f1f5f9; border-radius: 6px; padding: 0.15rem 0.35rem; }
-a { color: #2563eb; }
-</style>
-</head>
-<body>
-	<main>${notebookHtml}</main>
-</body>
-</html>`;
-
-		const blob = new Blob([documentHtml], { type: 'text/html;charset=utf-8' });
-		const url = URL.createObjectURL(blob);
-		const anchor = document.createElement('a');
-		anchor.href = url;
-		anchor.download = 'family-notebook.html';
-		anchor.click();
-		URL.revokeObjectURL(url);
-	}
+	let { data }: { data: PageData } = $props();
 </script>
 
 <svelte:head>
-	<title>Family Net Notebook</title>
-	<meta
-		name="description"
-		content="Write secure markdown and export it as a clean family planning notebook."
-	/>
+	<title>Family Net</title>
 </svelte:head>
 
-<main>
-	<header>
-		<h1>Family Net</h1>
-		<p>Write markdown first, then view it as a modern notebook and export it for sharing.</p>
+<div class="page">
+	<header class="page-header">
+		<h1>Notebook</h1>
+		<p class="subtitle">
+			{data.entries.length} {data.entries.length === 1 ? 'entry' : 'entries'} · maintained by agents
+		</p>
 	</header>
 
-	<section class="workspace">
-		<article>
-			<div class="section-header">
-				<h2>Markdown</h2>
-				<button type="button" onclick={exportNotebook}>Export HTML</button>
-			</div>
-			<label class="sr-only" for="notebook-markdown">Family notebook markdown</label>
-			<textarea id="notebook-markdown" bind:value={markdown} spellcheck="true" autocomplete="off"></textarea>
-		</article>
-
-		<article>
-			<h2>Notebook preview</h2>
-			<div class="preview" aria-live="polite">
-				{@html notebookHtml}
-			</div>
-		</article>
-	</section>
-</main>
+	{#if data.entries.length === 0}
+		<div class="empty">
+			<p>No notebook entries yet.</p>
+			<p class="hint">
+				Use the <a href="/api/tools?format=openapi" target="_blank">agent API</a>
+				or POST to <code>/api/notebook</code> to create the first entry.
+			</p>
+		</div>
+	{:else}
+		<div class="grid">
+			{#each data.entries as entry}
+				{@const color = TYPE_COLORS[entry.type] ?? TYPE_COLORS['note']}
+				<a href="/notebook/{entry.slug}" class="card">
+					<div class="card-top">
+						<span class="type-badge" style="background: {color.bg}; color: {color.text}">
+							{TYPE_LABELS[entry.type] ?? entry.type}
+						</span>
+						{#if entry.visibility === 'private'}
+							<span class="private-badge" title="Private">🔒</span>
+						{/if}
+					</div>
+					<h2 class="card-title">{entry.title}</h2>
+					{#if entry.tags.length}
+						<div class="card-tags">
+							{#each entry.tags.slice(0, 3) as tag}
+								<span class="tag">{tag}</span>
+							{/each}
+						</div>
+					{/if}
+					<p class="card-meta">Updated {entry.updated}</p>
+				</a>
+			{/each}
+		</div>
+	{/if}
+</div>
 
 <style>
-	:global(body) {
-		margin: 0;
-		font-family:
-			Inter,
-			system-ui,
-			-apple-system,
-			BlinkMacSystemFont,
-			'Segoe UI',
-			sans-serif;
-		background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
-		color: #0f172a;
-	}
-
-	main {
-		max-width: 1100px;
-		margin: 0 auto;
-		padding: 2rem 1rem 3rem;
-	}
-
-	header {
-		margin-bottom: 1.5rem;
-	}
-
-	h1 {
-		margin: 0;
-		font-size: clamp(1.8rem, 4vw, 2.5rem);
-	}
-
-	p {
-		margin: 0.6rem 0 0;
-		color: #334155;
-	}
-
-	.workspace {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1rem;
-	}
-
-	article {
-		background: #ffffff;
-		border: 1px solid #dbeafe;
-		border-radius: 16px;
-		padding: 1rem;
-		box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-	}
-
-	.section-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-	}
-
-	h2 {
-		margin: 0 0 0.75rem;
-		font-size: 1.1rem;
-	}
-
-	button {
-		border: none;
-		background: #2563eb;
-		color: white;
-		padding: 0.55rem 0.9rem;
-		border-radius: 10px;
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	button:hover {
-		background: #1d4ed8;
-	}
-
-	textarea {
-		width: 100%;
-		min-height: 460px;
-		border: 1px solid #cbd5e1;
-		border-radius: 12px;
-		padding: 0.9rem;
-		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
-		font-size: 0.95rem;
-		line-height: 1.45;
-		box-sizing: border-box;
-		resize: vertical;
-	}
-
-	.preview {
-		min-height: 460px;
-		border-radius: 12px;
-		border: 1px solid #cbd5e1;
-		padding: 1rem;
-		background: #fcfdff;
-	}
-
-	.preview :global(h1),
-	.preview :global(h2),
-	.preview :global(h3),
-	.preview :global(h4),
-	.preview :global(h5),
-	.preview :global(h6) {
-		margin-top: 1rem;
-		margin-bottom: 0.5rem;
-	}
-
-	.preview :global(p) {
-		margin: 0.5rem 0;
-		color: #0f172a;
-	}
-
-	.preview :global(ul),
-	.preview :global(ol) {
-		margin: 0.5rem 0 0.75rem 1.2rem;
-	}
-
-	.preview :global(code) {
-		background: #e2e8f0;
-		border-radius: 6px;
-		padding: 0.1rem 0.3rem;
-	}
-
-	.preview :global(a) {
-		color: #1d4ed8;
-	}
-
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
-	}
+	.page { width: 100%; }
+	.page-header { margin-bottom: 2rem; }
+	h1 { margin: 0 0 0.25rem; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; }
+	.subtitle { margin: 0; color: #9b9baa; font-size: 0.875rem; }
+	.empty { background: #fafaf8; border: 1px dashed #d4d2cc; border-radius: 12px; padding: 3rem 2rem; text-align: center; color: #6b6b80; }
+	.empty p { margin: 0 0 0.5rem; }
+	.hint { font-size: 0.875rem; }
+	.hint a { color: #4f46e5; }
+	.hint code { background: #f0eff9; padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.875em; }
+	.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+	.card { display: flex; flex-direction: column; gap: 0.5rem; background: #fff; border: 1px solid #e5e3de; border-radius: 12px; padding: 1.25rem; text-decoration: none; color: inherit; transition: box-shadow 0.15s, border-color 0.15s; }
+	.card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: #c4c4cf; }
+	.card-top { display: flex; align-items: center; justify-content: space-between; }
+	.type-badge { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 4px; }
+	.private-badge { font-size: 0.75rem; }
+	.card-title { margin: 0; font-size: 1rem; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
+	.card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+	.tag { padding: 0.15rem 0.5rem; background: #f0eff9; color: #6b6b80; border-radius: 99px; font-size: 0.72rem; }
+	.card-meta { margin: 0; font-size: 0.75rem; color: #c4c4cf; margin-top: auto; padding-top: 0.25rem; }
 </style>

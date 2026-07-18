@@ -1,3 +1,13 @@
+/** Convert a title to a URL-safe slug */
+export function slugify(title: string): string {
+	return title
+		.toLowerCase()
+		.replace(/[^a-z0-9\s-]/g, '')
+		.trim()
+		.replace(/\s+/g, '-')
+		.replace(/-+/g, '-');
+}
+
 const headingPattern = /^(#{1,6})\s+(.*)$/;
 const unorderedListPattern = /^\s*-\s+(.*)$/;
 const orderedListPattern = /^\s*\d+\.\s+(.*)$/;
