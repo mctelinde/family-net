@@ -1,5 +1,6 @@
 import matter from 'gray-matter';
 import { marked } from 'marked';
+import { env } from '$env/dynamic/private';
 import type { NotebookEntry, NotebookEntryMeta, WidgetType, Visibility } from '$lib/types';
 
 // ---------------------------------------------------------------------------
@@ -7,7 +8,7 @@ import type { NotebookEntry, NotebookEntryMeta, WidgetType, Visibility } from '$
 // ---------------------------------------------------------------------------
 
 function useBlob(): boolean {
-	return !!process.env.BLOB_READ_WRITE_TOKEN;
+	return !!env.BLOB_READ_WRITE_TOKEN;
 }
 
 function canAccess(
@@ -58,7 +59,7 @@ function parseMeta(slug: string, data: Record<string, unknown>): NotebookEntryMe
 
 async function blobGet(pathname: string): Promise<string | null> {
 	const { list } = await import('@vercel/blob');
-	const { blobs } = await list({ prefix: pathname });
+	const { blobs } = await list({ prefix: pathname, token: env.BLOB_READ_WRITE_TOKEN });
 	const match = blobs.find((b) => b.pathname === pathname);
 	if (!match) return null;
 	const res = await fetch(match.downloadUrl);
@@ -68,14 +69,14 @@ async function blobGet(pathname: string): Promise<string | null> {
 
 async function blobPut(pathname: string, content: string): Promise<void> {
 	const { put } = await import('@vercel/blob');
-	await put(pathname, content, { access: 'private', addRandomSuffix: false });
+	await put(pathname, content, { access: 'private', addRandomSuffix: false, token: env.BLOB_READ_WRITE_TOKEN });
 }
 
 async function blobDel(pathname: string): Promise<void> {
 	const { list, del } = await import('@vercel/blob');
-	const { blobs } = await list({ prefix: pathname });
+	const { blobs } = await list({ prefix: pathname, token: env.BLOB_READ_WRITE_TOKEN });
 	const match = blobs.find((b) => b.pathname === pathname);
-	if (match) await del(match.url);
+	if (match) await del(match.url, { token: env.BLOB_READ_WRITE_TOKEN });
 }
 
 async function blobListPathnames(prefix: string): Promise<Array<{ pathname: string; downloadUrl: string }>> {
@@ -83,7 +84,7 @@ async function blobListPathnames(prefix: string): Promise<Array<{ pathname: stri
 	const results: Array<{ pathname: string; downloadUrl: string }> = [];
 	let cursor: string | undefined;
 	do {
-		const page = await list({ prefix, cursor, limit: 100 });
+		const page = await list({ prefix, cursor, limit: 100, token: env.BLOB_READ_WRITE_TOKEN });
 		results.push(...page.blobs.map((b) => ({ pathname: b.pathname, downloadUrl: b.downloadUrl })));
 		cursor = page.cursor;
 	} while (cursor);

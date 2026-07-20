@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { env } from '$env/dynamic/private';
 import type { User, UserRole } from '$lib/types';
 
 const USERS_BLOB_PATH = 'data/users.json';
@@ -8,7 +9,7 @@ const USERS_BLOB_PATH = 'data/users.json';
 // ---------------------------------------------------------------------------
 
 function useBlob(): boolean {
-	return !!process.env.BLOB_READ_WRITE_TOKEN;
+	return !!env.BLOB_READ_WRITE_TOKEN;
 }
 
 // ---------------------------------------------------------------------------
@@ -17,7 +18,7 @@ function useBlob(): boolean {
 
 async function blobLoadUsers(): Promise<User[]> {
 	const { list } = await import('@vercel/blob');
-	const { blobs } = await list({ prefix: USERS_BLOB_PATH });
+	const { blobs } = await list({ prefix: USERS_BLOB_PATH, token: env.BLOB_READ_WRITE_TOKEN });
 	const match = blobs.find((b) => b.pathname === USERS_BLOB_PATH);
 	if (!match) return [];
 	const res = await fetch(match.downloadUrl);
@@ -30,6 +31,7 @@ async function blobSaveUsers(users: User[]): Promise<void> {
 	await put(USERS_BLOB_PATH, JSON.stringify(users, null, 2), {
 		access: 'private',
 		addRandomSuffix: false,
+		token: env.BLOB_READ_WRITE_TOKEN,
 	});
 }
 
@@ -41,7 +43,11 @@ async function fsLoadUsers(): Promise<User[]> {
 	const { readFile, mkdir } = await import('fs/promises');
 	const { join } = await import('path');
 	const dataDir = join(process.cwd(), 'data');
-	await mkdir(dataDir, { recursive: true });
+	try {
+		await mkdir(dataDir, { recursive: true });
+	} catch {
+		// read-only fs (e.g. Vercel) — attempt read anyway
+	}
 	try {
 		const raw = await readFile(join(dataDir, 'users.json'), 'utf-8');
 		return JSON.parse(raw) as User[];
