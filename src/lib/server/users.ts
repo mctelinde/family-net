@@ -27,16 +27,12 @@ function blobToken(): string | undefined {
 // ---------------------------------------------------------------------------
 
 async function blobLoadUsers(): Promise<User[]> {
-	const { list } = await import('@vercel/blob');
+	const { get } = await import('@vercel/blob');
 	const token = blobToken();
-	const { blobs } = await list({ prefix: USERS_BLOB_PATH, ...(token ? { token } : {}) });
-	const match = blobs.find((b) => b.pathname === USERS_BLOB_PATH);
-	if (!match) return []; // no users file yet — first run
-	const res = await fetch(match.downloadUrl);
-	if (!res.ok) {
-		throw new Error(`Blob read failed: ${res.status} ${res.statusText} — check BLOB_STORE_ID / VERCEL_OIDC_TOKEN`);
-	}
-	return res.json() as Promise<User[]>;
+	const result = await get(USERS_BLOB_PATH, { access: 'private', ...(token ? { token } : {}) });
+	if (!result) return [];
+	const text = await new Response(result.stream).text();
+	return JSON.parse(text) as User[];
 }
 
 async function blobSaveUsers(users: User[]): Promise<void> {

@@ -62,14 +62,11 @@ function parseMeta(slug: string, data: Record<string, unknown>): NotebookEntryMe
 // ---------------------------------------------------------------------------
 
 async function blobGet(pathname: string): Promise<string | null> {
-	const { list } = await import('@vercel/blob');
+	const { get } = await import('@vercel/blob');
 	const token = blobToken();
-	const { blobs } = await list({ prefix: pathname, ...(token ? { token } : {}) });
-	const match = blobs.find((b) => b.pathname === pathname);
-	if (!match) return null;
-	const res = await fetch(match.downloadUrl);
-	if (!res.ok) return null;
-	return res.text();
+	const result = await get(pathname, { access: 'private', ...(token ? { token } : {}) });
+	if (!result) return null;
+	return new Response(result.stream).text();
 }
 
 async function blobPut(pathname: string, content: string): Promise<void> {
@@ -86,14 +83,14 @@ async function blobDel(pathname: string): Promise<void> {
 	if (match) await del(match.url, ...(token ? [{ token }] : []));
 }
 
-async function blobListPathnames(prefix: string): Promise<Array<{ pathname: string; downloadUrl: string }>> {
+async function blobListPathnames(prefix: string): Promise<string[]> {
 	const { list } = await import('@vercel/blob');
 	const token = blobToken();
-	const results: Array<{ pathname: string; downloadUrl: string }> = [];
+	const results: string[] = [];
 	let cursor: string | undefined;
 	do {
 		const page = await list({ prefix, cursor, limit: 100, ...(token ? { token } : {}) });
-		results.push(...page.blobs.map((b) => ({ pathname: b.pathname, downloadUrl: b.downloadUrl })));
+		results.push(...page.blobs.map((b) => b.pathname));
 		cursor = page.cursor;
 	} while (cursor);
 	return results;
@@ -148,13 +145,12 @@ export async function listEntries(userId: string, isAdmin: boolean): Promise<Not
 	let raws: Array<{ slug: string; raw: string }>;
 
 	if (useBlob()) {
-		const blobs = await blobListPathnames('entries/');
+		const pathnames = await blobListPathnames('entries/');
 		raws = (
 			await Promise.all(
-				blobs.map(async ({ pathname, downloadUrl }) => {
-					const res = await fetch(downloadUrl);
-					if (!res.ok) return null;
-					const raw = await res.text();
+				pathnames.map(async (pathname) => {
+					const raw = await blobGet(pathname);
+					if (!raw) return null;
 					const slug = pathname.replace(/^entries\//, '').replace(/\.md$/, '');
 					return { slug, raw };
 				})
