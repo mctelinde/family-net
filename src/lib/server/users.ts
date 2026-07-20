@@ -1,28 +1,73 @@
-import { readFile, writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import { randomUUID } from 'crypto';
 import type { User, UserRole } from '$lib/types';
 
-const DATA_DIR = join(process.cwd(), 'data');
-const USERS_FILE = join(DATA_DIR, 'users.json');
+const USERS_BLOB_PATH = 'data/users.json';
 
-async function ensureDir(): Promise<void> {
-	await mkdir(DATA_DIR, { recursive: true });
+// ---------------------------------------------------------------------------
+// Backend detection
+// ---------------------------------------------------------------------------
+
+function useBlob(): boolean {
+	return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
-export async function loadUsers(): Promise<User[]> {
-	await ensureDir();
+// ---------------------------------------------------------------------------
+// Vercel Blob backend
+// ---------------------------------------------------------------------------
+
+async function blobLoadUsers(): Promise<User[]> {
+	const { list } = await import('@vercel/blob');
+	const { blobs } = await list({ prefix: USERS_BLOB_PATH });
+	const match = blobs.find((b) => b.pathname === USERS_BLOB_PATH);
+	if (!match) return [];
+	const res = await fetch(match.downloadUrl);
+	if (!res.ok) return [];
+	return res.json() as Promise<User[]>;
+}
+
+async function blobSaveUsers(users: User[]): Promise<void> {
+	const { put } = await import('@vercel/blob');
+	await put(USERS_BLOB_PATH, JSON.stringify(users, null, 2), {
+		access: 'private',
+		addRandomSuffix: false,
+	});
+}
+
+// ---------------------------------------------------------------------------
+// Local filesystem backend
+// ---------------------------------------------------------------------------
+
+async function fsLoadUsers(): Promise<User[]> {
+	const { readFile, mkdir } = await import('fs/promises');
+	const { join } = await import('path');
+	const dataDir = join(process.cwd(), 'data');
+	await mkdir(dataDir, { recursive: true });
 	try {
-		const raw = await readFile(USERS_FILE, 'utf-8');
+		const raw = await readFile(join(dataDir, 'users.json'), 'utf-8');
 		return JSON.parse(raw) as User[];
 	} catch {
 		return [];
 	}
 }
 
+async function fsSaveUsers(users: User[]): Promise<void> {
+	const { writeFile, mkdir } = await import('fs/promises');
+	const { join } = await import('path');
+	const dataDir = join(process.cwd(), 'data');
+	await mkdir(dataDir, { recursive: true });
+	await writeFile(join(dataDir, 'users.json'), JSON.stringify(users, null, 2), 'utf-8');
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+export async function loadUsers(): Promise<User[]> {
+	return useBlob() ? blobLoadUsers() : fsLoadUsers();
+}
+
 async function saveUsers(users: User[]): Promise<void> {
-	await ensureDir();
-	await writeFile(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
+	return useBlob() ? blobSaveUsers(users) : fsSaveUsers(users);
 }
 
 export async function findUserByEmail(email: string): Promise<User | null> {
