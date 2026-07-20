@@ -6,10 +6,20 @@ const USERS_BLOB_PATH = 'data/users.json';
 
 // ---------------------------------------------------------------------------
 // Backend detection
+// BLOB_STORE_ID is injected by Vercel when the blob store is connected via
+// the dashboard Projects tab (OIDC auth). BLOB_READ_WRITE_TOKEN is the
+// fallback for local dev with a static token.
 // ---------------------------------------------------------------------------
 
 function useBlob(): boolean {
-	return !!env.BLOB_READ_WRITE_TOKEN;
+	return !!(env.BLOB_STORE_ID || env.BLOB_READ_WRITE_TOKEN);
+}
+
+// Explicit token for SDK calls — only set when using a static read-write
+// token. When undefined the SDK auto-resolves via OIDC (VERCEL_OIDC_TOKEN +
+// BLOB_STORE_ID), which is the production path.
+function blobToken(): string | undefined {
+	return env.BLOB_READ_WRITE_TOKEN || undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -18,7 +28,8 @@ function useBlob(): boolean {
 
 async function blobLoadUsers(): Promise<User[]> {
 	const { list } = await import('@vercel/blob');
-	const { blobs } = await list({ prefix: USERS_BLOB_PATH, token: env.BLOB_READ_WRITE_TOKEN });
+	const token = blobToken();
+	const { blobs } = await list({ prefix: USERS_BLOB_PATH, ...(token ? { token } : {}) });
 	const match = blobs.find((b) => b.pathname === USERS_BLOB_PATH);
 	if (!match) return [];
 	const res = await fetch(match.downloadUrl);
@@ -28,10 +39,11 @@ async function blobLoadUsers(): Promise<User[]> {
 
 async function blobSaveUsers(users: User[]): Promise<void> {
 	const { put } = await import('@vercel/blob');
+	const token = blobToken();
 	await put(USERS_BLOB_PATH, JSON.stringify(users, null, 2), {
 		access: 'private',
 		addRandomSuffix: false,
-		token: env.BLOB_READ_WRITE_TOKEN,
+		...(token ? { token } : {}),
 	});
 }
 
