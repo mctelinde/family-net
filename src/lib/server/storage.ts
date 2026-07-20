@@ -8,7 +8,11 @@ import type { NotebookEntry, NotebookEntryMeta, WidgetType, Visibility } from '$
 // ---------------------------------------------------------------------------
 
 function useBlob(): boolean {
-	return !!env.BLOB_READ_WRITE_TOKEN;
+	return !!(env.BLOB_STORE_ID || env.BLOB_READ_WRITE_TOKEN);
+}
+
+function blobToken(): string | undefined {
+	return env.BLOB_READ_WRITE_TOKEN || undefined;
 }
 
 function canAccess(
@@ -58,34 +62,35 @@ function parseMeta(slug: string, data: Record<string, unknown>): NotebookEntryMe
 // ---------------------------------------------------------------------------
 
 async function blobGet(pathname: string): Promise<string | null> {
-	const { list } = await import('@vercel/blob');
-	const { blobs } = await list({ prefix: pathname, token: env.BLOB_READ_WRITE_TOKEN });
-	const match = blobs.find((b) => b.pathname === pathname);
-	if (!match) return null;
-	const res = await fetch(match.downloadUrl);
-	if (!res.ok) return null;
-	return res.text();
+	const { get } = await import('@vercel/blob');
+	const token = blobToken();
+	const result = await get(pathname, { access: 'private', ...(token ? { token } : {}) });
+	if (!result) return null;
+	return new Response(result.stream).text();
 }
 
 async function blobPut(pathname: string, content: string): Promise<void> {
 	const { put } = await import('@vercel/blob');
-	await put(pathname, content, { access: 'private', addRandomSuffix: false, token: env.BLOB_READ_WRITE_TOKEN });
+	const token = blobToken();
+	await put(pathname, content, { access: 'private', addRandomSuffix: false, ...(token ? { token } : {}) });
 }
 
 async function blobDel(pathname: string): Promise<void> {
 	const { list, del } = await import('@vercel/blob');
-	const { blobs } = await list({ prefix: pathname, token: env.BLOB_READ_WRITE_TOKEN });
+	const token = blobToken();
+	const { blobs } = await list({ prefix: pathname, ...(token ? { token } : {}) });
 	const match = blobs.find((b) => b.pathname === pathname);
-	if (match) await del(match.url, { token: env.BLOB_READ_WRITE_TOKEN });
+	if (match) await del(match.url, ...(token ? [{ token }] : []));
 }
 
-async function blobListPathnames(prefix: string): Promise<Array<{ pathname: string; downloadUrl: string }>> {
+async function blobListPathnames(prefix: string): Promise<string[]> {
 	const { list } = await import('@vercel/blob');
-	const results: Array<{ pathname: string; downloadUrl: string }> = [];
+	const token = blobToken();
+	const results: string[] = [];
 	let cursor: string | undefined;
 	do {
-		const page = await list({ prefix, cursor, limit: 100, token: env.BLOB_READ_WRITE_TOKEN });
-		results.push(...page.blobs.map((b) => ({ pathname: b.pathname, downloadUrl: b.downloadUrl })));
+		const page = await list({ prefix, cursor, limit: 100, ...(token ? { token } : {}) });
+		results.push(...page.blobs.map((b) => b.pathname));
 		cursor = page.cursor;
 	} while (cursor);
 	return results;
@@ -140,13 +145,12 @@ export async function listEntries(userId: string, isAdmin: boolean): Promise<Not
 	let raws: Array<{ slug: string; raw: string }>;
 
 	if (useBlob()) {
-		const blobs = await blobListPathnames('entries/');
+		const pathnames = await blobListPathnames('entries/');
 		raws = (
 			await Promise.all(
-				blobs.map(async ({ pathname, downloadUrl }) => {
-					const res = await fetch(downloadUrl);
-					if (!res.ok) return null;
-					const raw = await res.text();
+				pathnames.map(async (pathname) => {
+					const raw = await blobGet(pathname);
+					if (!raw) return null;
 					const slug = pathname.replace(/^entries\//, '').replace(/\.md$/, '');
 					return { slug, raw };
 				})
