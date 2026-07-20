@@ -3,7 +3,9 @@ import type { Actions, PageServerLoad } from './$types';
 import { hasAnyUsers, createUser } from '$lib/server/users';
 import { hashPassword, setSession } from '$lib/server/auth';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
+	// If already authenticated, go home regardless of user count
+	if (locals.user) redirect(302, '/');
 	// Only accessible when no users exist
 	if (await hasAnyUsers()) redirect(302, '/login');
 	return {};

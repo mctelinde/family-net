@@ -31,9 +31,11 @@ async function blobLoadUsers(): Promise<User[]> {
 	const token = blobToken();
 	const { blobs } = await list({ prefix: USERS_BLOB_PATH, ...(token ? { token } : {}) });
 	const match = blobs.find((b) => b.pathname === USERS_BLOB_PATH);
-	if (!match) return [];
+	if (!match) return []; // no users file yet — first run
 	const res = await fetch(match.downloadUrl);
-	if (!res.ok) return [];
+	if (!res.ok) {
+		throw new Error(`Blob read failed: ${res.status} ${res.statusText} — check BLOB_STORE_ID / VERCEL_OIDC_TOKEN`);
+	}
 	return res.json() as Promise<User[]>;
 }
 
