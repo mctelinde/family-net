@@ -21,8 +21,6 @@
 </div>
 
 <style>
-	.page { width: 100%; }
-
 	.breadcrumb {
 		display: flex;
 		align-items: center;
