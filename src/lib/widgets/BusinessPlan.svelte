@@ -135,4 +135,5 @@
 	.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 	.milestone-name { flex: 1; font-size: 0.9rem; color: #1a1a2e; }
 	.milestone-date { font-size: 0.78rem; color: #9b9baa; }
+
 </style>

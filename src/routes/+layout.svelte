@@ -66,6 +66,10 @@
 	:global(.prose blockquote) { border-left: 3px solid #e5e3de; padding-left: 1rem; color: #6b6b80; margin: 1em 0; font-style: italic; }
 	:global(.prose strong) { font-weight: 700; color: #1a1a2e; }
 	:global(.prose hr) { border: none; border-top: 1px solid #e5e3de; margin: 2em 0; }
+	:global(.prose table) { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.875rem; }
+	:global(.prose thead th) { background: #f4f4f5; border: 1px solid #e5e3de; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: #1a1a2e; font-size: 0.82rem; }
+	:global(.prose tbody td) { border: 1px solid #e5e3de; padding: 0.5rem 0.75rem; color: #3d3d4d; }
+	:global(.prose tbody tr:nth-child(even) td) { background: #fafaf8; }
 	.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100dvh; }
 	.sidebar { position: sticky; top: 0; height: 100dvh; overflow-y: auto; background: #f0efe9; border-right: 1px solid #e5e3de; display: flex; flex-direction: column; padding: 1.25rem 0; }
 	.sidebar-top { flex: 1; padding: 0 1rem; }
