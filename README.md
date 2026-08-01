@@ -1,6 +1,6 @@
 # Family Net
 
-A markdown-first, agent-driven family notebook. SvelteKit 2 + Svelte 5, deployed to Vercel, with a first-class REST + tool-schema API for LLM agents and a reader-only web UI.
+A markdown-first, agent-driven family notebook. SvelteKit 2 + Svelte 5, self-hosted as a single Node process, with a first-class REST + tool-schema API for LLM agents and a reader-only web UI.
 
 ## What it is
 
@@ -20,9 +20,8 @@ Entries are scoped per-user with `visibility: 'private' | 'family'`. Private ent
 ## Stack
 
 - **SvelteKit 2** + **Svelte 5** (runes) + **TypeScript** + **Vite 8**
-- **`@sveltejs/adapter-vercel`** — serverless functions
-- **`@vercel/blob`** — private blob storage (OIDC-authenticated in production, token-authenticated locally)
-- **Local filesystem fallback** — `data/entries/*.md` and `data/users.json` when no blob credentials are set
+- **`@sveltejs/adapter-node`** — long-lived Node.js server
+- **Local filesystem** — `data/entries/*.md` and `data/users.json`
 - **`gray-matter`** + **`marked`** — markdown parsing
 - **Custom sanitizer** — `src/lib/markdown.ts` powers the `Note` widget (headings, lists, inline code, bold, italic, links; allows `http`/`https`/`mailto`, root-relative, and `#` URLs only; escapes raw HTML)
 - **AI providers** — pluggable `openai` (also OpenAI-compatible: Ollama, LM Studio, vLLM), `anthropic`, `ollama`, or `none`
@@ -35,7 +34,6 @@ Copy `.env.example` to `.env` and fill in:
 | ------------------------- | -------- | -------------------------------------------------------------------- |
 | `SESSION_SECRET`          | Yes      | HMAC secret for session cookies. `openssl rand -hex 32`              |
 | `AGENT_API_KEY`           | Yes      | Bearer token for `/api/notebook*`. `openssl rand -hex 24`            |
-| `BLOB_READ_WRITE_TOKEN`   | Prod (opt) | Vercel Blob token. Omit when using OIDC (Vercel injects `BLOB_STORE_ID`) |
 | `AI_PROVIDER`             | No       | `none` (default), `openai`, `anthropic`, or `ollama`                 |
 | `OPENAI_API_KEY`          | If `openai` | OpenAI key (or any compatible service)                            |
 | `OPENAI_BASE_URL`         | No       | Override endpoint — Ollama: `http://localhost:11434/v1`               |
@@ -59,15 +57,27 @@ npm test             # vitest
 npm run build        # production build
 ```
 
-## Deployment (Vercel)
+## Deployment (self-hosted)
 
-1. Connect the repo to a Vercel project.
-2. Attach a Vercel Blob store to the project — this injects `BLOB_STORE_ID` and the OIDC token at runtime. No `BLOB_READ_WRITE_TOKEN` needed in this mode.
-3. Set `SESSION_SECRET` and `AGENT_API_KEY` in the project's environment variables.
-4. Deploy. `@sveltejs/adapter-vercel` builds the serverless output automatically.
+`npm run build` produces a standard Node.js server in `build/`.
 
-For local dev against a real blob store, set `BLOB_READ_WRITE_TOKEN` to a static read-write token from the Vercel dashboard instead.
+```sh
+npm run build
+node build/index.js
+```
 
+Set `SESSION_SECRET` and `AGENT_API_KEY` in your environment (or a `.env` file) before starting. Data is written to `data/` relative to the working directory — mount a persistent volume there in Docker/Compose.
+
+### Docker
+
+```sh
+docker run -d \
+  -e SESSION_SECRET=<secret> \
+  -e AGENT_API_KEY=<key> \
+  -v family-net-data:/app/data \
+  -p 3000:3000 \
+  family-net
+```
 ## Agent API
 
 All routes under `/api/notebook*` require `Authorization: Bearer ${AGENT_API_KEY}`. The agent identity has admin-level read access.
@@ -106,14 +116,14 @@ curl -X POST https://your-deployment/api/notebook \
 
 No auth required — schemas are public so any agent can self-configure.
 
-## Storage backends
+## Storage
 
-`src/lib/server/storage.ts` picks a backend at call time based on env:
+All data lives on the local filesystem under `data/` (gitignored):
 
-- **Vercel Blob** — when `BLOB_STORE_ID` or `BLOB_READ_WRITE_TOKEN` is set. Entries are stored as `entries/{slug}.md` with private access; the SDK uses OIDC when no token is provided.
-- **Local filesystem** — fallback for local dev. Files live in `data/entries/{slug}.md`. The `data/` directory is gitignored.
+- **Entries** — `data/entries/{slug}.md` (markdown + YAML frontmatter)
+- **Users** — `data/users.json`
 
-Users are stored the same way: `data/users.json` on disk, or `data/users.json` as a single private blob in production.
+Mount `data/` as a persistent volume in production so it survives container restarts.
 
 ## Security notes
 

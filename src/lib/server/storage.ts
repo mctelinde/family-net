@@ -1,19 +1,10 @@
 import matter from 'gray-matter';
 import { marked } from 'marked';
-import { env } from '$env/dynamic/private';
 import type { NotebookEntry, NotebookEntryMeta, WidgetType, Visibility } from '$lib/types';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
-
-function useBlob(): boolean {
-	return !!(env.BLOB_STORE_ID || env.BLOB_READ_WRITE_TOKEN);
-}
-
-function blobToken(): string | undefined {
-	return env.BLOB_READ_WRITE_TOKEN || undefined;
-}
 
 function canAccess(
 	entry: { owner: string; visibility: Visibility },
@@ -58,46 +49,7 @@ function parseMeta(slug: string, data: Record<string, unknown>): NotebookEntryMe
 }
 
 // ---------------------------------------------------------------------------
-// Vercel Blob backend
-// ---------------------------------------------------------------------------
-
-async function blobGet(pathname: string): Promise<string | null> {
-	const { get } = await import('@vercel/blob');
-	const token = blobToken();
-	const result = await get(pathname, { access: 'private', ...(token ? { token } : {}) });
-	if (!result) return null;
-	return new Response(result.stream).text();
-}
-
-async function blobPut(pathname: string, content: string): Promise<void> {
-	const { put } = await import('@vercel/blob');
-	const token = blobToken();
-	await put(pathname, content, { access: 'private', addRandomSuffix: false, ...(token ? { token } : {}) });
-}
-
-async function blobDel(pathname: string): Promise<void> {
-	const { list, del } = await import('@vercel/blob');
-	const token = blobToken();
-	const { blobs } = await list({ prefix: pathname, ...(token ? { token } : {}) });
-	const match = blobs.find((b) => b.pathname === pathname);
-	if (match) await del(match.url, ...(token ? [{ token }] : []));
-}
-
-async function blobListPathnames(prefix: string): Promise<string[]> {
-	const { list } = await import('@vercel/blob');
-	const token = blobToken();
-	const results: string[] = [];
-	let cursor: string | undefined;
-	do {
-		const page = await list({ prefix, cursor, limit: 100, ...(token ? { token } : {}) });
-		results.push(...page.blobs.map((b) => b.pathname));
-		cursor = page.cursor;
-	} while (cursor);
-	return results;
-}
-
-// ---------------------------------------------------------------------------
-// Local filesystem backend
+// Filesystem backend
 // ---------------------------------------------------------------------------
 
 async function fsGet(slug: string): Promise<string | null> {
@@ -142,31 +94,15 @@ async function fsListSlugs(): Promise<string[]> {
 // ---------------------------------------------------------------------------
 
 export async function listEntries(userId: string, isAdmin: boolean): Promise<NotebookEntryMeta[]> {
-	let raws: Array<{ slug: string; raw: string }>;
-
-	if (useBlob()) {
-		const pathnames = await blobListPathnames('entries/');
-		raws = (
-			await Promise.all(
-				pathnames.map(async (pathname) => {
-					const raw = await blobGet(pathname);
-					if (!raw) return null;
-					const slug = pathname.replace(/^entries\//, '').replace(/\.md$/, '');
-					return { slug, raw };
-				})
-			)
-		).filter((x): x is { slug: string; raw: string } => x !== null);
-	} else {
-		const slugs = await fsListSlugs();
-		raws = (
-			await Promise.all(
-				slugs.map(async (slug) => {
-					const raw = await fsGet(slug);
-					return raw ? { slug, raw } : null;
-				})
-			)
-		).filter((x): x is { slug: string; raw: string } => x !== null);
-	}
+	const slugs = await fsListSlugs();
+	const raws = (
+		await Promise.all(
+			slugs.map(async (slug) => {
+				const raw = await fsGet(slug);
+				return raw ? { slug, raw } : null;
+			})
+		)
+	).filter((x): x is { slug: string; raw: string } => x !== null);
 
 	return raws
 		.map(({ slug, raw }) => {
@@ -186,7 +122,7 @@ export async function readEntry(
 	userId: string,
 	isAdmin: boolean
 ): Promise<NotebookEntry | null> {
-	const raw = useBlob() ? await blobGet(`entries/${slug}.md`) : await fsGet(slug);
+	const raw = await fsGet(slug);
 	if (!raw) return null;
 
 	const { data, content } = matter(raw);
@@ -204,24 +140,13 @@ export async function writeEntry(
 ): Promise<void> {
 	const updated = new Date().toISOString().slice(0, 10);
 	const content = matter.stringify(body, { ...frontmatter, updated });
-	if (useBlob()) {
-		await blobPut(`entries/${slug}.md`, content);
-	} else {
-		await fsPut(slug, content);
-	}
+	await fsPut(slug, content);
 }
 
 export async function deleteEntry(slug: string): Promise<void> {
-	if (useBlob()) {
-		await blobDel(`entries/${slug}.md`);
-	} else {
-		await fsDel(slug);
-	}
+	await fsDel(slug);
 }
 
 export async function entryExists(slug: string): Promise<boolean> {
-	if (useBlob()) {
-		return (await blobGet(`entries/${slug}.md`)) !== null;
-	}
 	return (await fsGet(slug)) !== null;
 }
