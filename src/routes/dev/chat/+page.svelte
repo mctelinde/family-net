@@ -30,7 +30,8 @@
 		`Do not call the same tool more than once unless the result was an error.` +
 		(devToolsEnabled
 			? `\n\nDev tools are available: use run_command to run git, npm, npx, node, tsc, prettier, or eslint commands; ` +
-			  `use read_file to read files; use write_file to write files; use list_dir to explore directories. ` +
+			  `use search_files to search for text or symbols across the codebase; ` +
+			  `use list_dir to explore directories; use read_file to read files; use write_file to write files. ` +
 			  `When the user asks you to run a command or read/write a file, call the appropriate tool directly. ` +
 			  `If a tool returns an error, report the exact error to the user — do not try alternative tools.`
 			: '');

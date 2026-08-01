@@ -101,6 +101,59 @@ const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknow
 
 	// ── Dev tools (active only when ENABLE_DEV_TOOLS=true) ──────────────────
 
+	search_files: async (args) => {
+		const MAX_RESULTS = 50;
+		const root    = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
+		const pattern = typeof args.pattern === 'string' ? args.pattern : '';
+		if (!pattern) return { error: 'pattern is required' };
+
+		const gitArgs = [
+			'grep',
+			'--line-number',
+			'-I',          // skip binary files
+			args.case_sensitive ? '' : '-i',
+			'--',
+			pattern,
+		].filter(Boolean) as string[];
+
+		if (typeof args.glob === 'string' && args.glob) {
+			gitArgs.push(`:(glob)${args.glob}`);
+		}
+
+		try {
+			const { stdout } = await execFile('git', gitArgs, {
+				cwd: root,
+				timeout: 15_000,
+				maxBuffer: 256 * 1024,
+			});
+
+			const lines = stdout.trim().split('\n').filter(Boolean);
+			const results = lines.slice(0, MAX_RESULTS).map((line) => {
+				// git grep output: "filepath:lineno:content"
+				const firstColon  = line.indexOf(':');
+				const secondColon = line.indexOf(':', firstColon + 1);
+				if (firstColon === -1 || secondColon === -1) return { raw: line };
+				return {
+					file: line.slice(0, firstColon),
+					line: parseInt(line.slice(firstColon + 1, secondColon), 10),
+					content: line.slice(secondColon + 1),
+				};
+			});
+
+			return {
+				pattern,
+				matches: results,
+				total: lines.length,
+				...(lines.length > MAX_RESULTS ? { truncated: true, note: `Showing first ${MAX_RESULTS} of ${lines.length} matches. Narrow with glob or a more specific pattern.` } : {}),
+			};
+		} catch (e: unknown) {
+			const err = e as { code?: number; stderr?: string };
+			// git grep exits 1 with no output when there are zero matches — that's not an error
+			if (err.code === 1) return { pattern, matches: [], total: 0 };
+			return { error: String(e) };
+		}
+	},
+
 	list_dir: async (args) => {
 		const root     = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
 		// Accept 'path', 'directory', or 'dir_path'

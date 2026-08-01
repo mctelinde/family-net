@@ -115,6 +115,31 @@ export const DEV_TOOLS: ToolDefinition[] = [
 		},
 	},
 	{
+		name: 'search_files',
+		description:
+			'Search for a text pattern across files in the project using git grep. ' +
+			'Returns matching lines with file path and line number. ' +
+			'Results are capped at 50 matches. Use glob to restrict to specific file types.',
+		parameters: {
+			type: 'object',
+			properties: {
+				pattern: {
+					type: 'string',
+					description: 'Text or regex pattern to search for.',
+				},
+				glob: {
+					type: 'string',
+					description: 'Optional glob to restrict which files are searched, e.g. "*.ts" or "src/**/*.svelte".',
+				},
+				case_sensitive: {
+					type: 'boolean',
+					description: 'Whether the search is case-sensitive. Defaults to false.',
+				},
+			},
+			required: ['pattern'],
+		},
+	},
+	{
 		name: 'read_file',
 		description:
 			'Read the text content of a file on the server. ' +
