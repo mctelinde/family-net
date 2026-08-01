@@ -98,6 +98,23 @@ export const NOTEBOOK_TOOLS: ToolDefinition[] = [
 /** Dev-only tools — only included when ENABLE_DEV_TOOLS=true in env. */
 export const DEV_TOOLS: ToolDefinition[] = [
 	{
+		name: 'list_dir',
+		description:
+			'List the files and subdirectories inside a directory. ' +
+			'Paths are relative to the project root or absolute. ' +
+			'Returns an array of entries with name, type ("file" or "dir"), and path.',
+		parameters: {
+			type: 'object',
+			properties: {
+				path: {
+					type: 'string',
+					description: 'Directory path to list (relative to project root or absolute). Defaults to the project root if omitted.',
+				},
+			},
+			required: [],
+		},
+	},
+	{
 		name: 'read_file',
 		description:
 			'Read the text content of a file on the server. ' +

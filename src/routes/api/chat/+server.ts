@@ -101,9 +101,26 @@ const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknow
 
 	// ── Dev tools (active only when ENABLE_DEV_TOOLS=true) ──────────────────
 
+	list_dir: async (args) => {
+		const root     = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
+		const raw      = (typeof args.path === 'string' && args.path ? args.path : '.').replace(/^[/\\]+/, '');
+		const resolved = path.resolve(root, raw);
+		if (!resolved.startsWith(root)) return { error: 'path traversal not allowed' };
+		try {
+			const entries = await fs.readdir(resolved, { withFileTypes: true });
+			return entries.map((e) => ({
+				name: e.name,
+				type: e.isDirectory() ? 'dir' : 'file',
+				path: path.relative(root, path.join(resolved, e.name)).replace(/\\/g, '/'),
+			}));
+		} catch (e: unknown) {
+			return { error: String(e) };
+		}
+	},
+
 	read_file: async (args) => {
 		const root = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
-		const raw  = typeof args.path === 'string' ? args.path : '';
+		const raw   = (typeof args.path === 'string' ? args.path : '').replace(/^[/\\]+/, '');
 		if (!raw) return { error: 'path is required' };
 		const resolved = path.resolve(root, raw);
 		if (!resolved.startsWith(root)) return { error: 'path traversal not allowed' };
@@ -117,7 +134,7 @@ const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknow
 
 	write_file: async (args) => {
 		const root    = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
-		const raw     = typeof args.path === 'string' ? args.path : '';
+		const raw     = (typeof args.path === 'string' ? args.path : '').replace(/^[/\\]+/, '');
 		const content = typeof args.content === 'string' ? args.content : '';
 		if (!raw) return { error: 'path is required' };
 		const resolved = path.resolve(root, raw);
