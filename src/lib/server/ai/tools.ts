@@ -11,7 +11,7 @@ export const NOTEBOOK_TOOLS: ToolDefinition[] = [
 			properties: {
 				type: {
 					type: 'string',
-					enum: ['note', 'business-plan', 'fitness-goals', 'finance-tracker'],
+					enum: ['note', 'business-plan', 'fitness-goals', 'finance-tracker', 'todo-list'],
 					description: 'Filter entries by widget type. Omit to return all types.',
 				},
 				visibility: {
@@ -53,7 +53,7 @@ export const NOTEBOOK_TOOLS: ToolDefinition[] = [
 				title: { type: 'string', description: 'Human-readable entry title.' },
 				type: {
 					type: 'string',
-					enum: ['note', 'business-plan', 'fitness-goals', 'finance-tracker'],
+					enum: ['note', 'business-plan', 'fitness-goals', 'finance-tracker', 'todo-list'],
 					description: 'Widget type that controls how the entry is rendered.',
 				},
 				visibility: {
