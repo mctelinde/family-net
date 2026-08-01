@@ -230,7 +230,7 @@
 		<div class="toolbar-actions">
 			<label class="toggle">
 				<input type="checkbox" bind:checked={showSystem} />
-				System prompt
+				Edit system prompt
 			</label>
 			<label class="toggle">
 				<input type="checkbox" bind:checked={showRaw} />
@@ -242,7 +242,7 @@
 
 	{#if showSystem}
 		<div class="system-panel">
-			<label class="system-label" for="sysprompt">System prompt (sent on every request)</label>
+			<label class="system-label" for="sysprompt">System prompt (always sent — edit or clear to change)</label>
 			<textarea
 				id="sysprompt"
 				class="system-textarea"
