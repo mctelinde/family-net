@@ -1,63 +1,15 @@
 import { randomUUID } from 'crypto';
-import { env } from '$env/dynamic/private';
 import type { User, UserRole } from '$lib/types';
 
-const USERS_BLOB_PATH = 'data/users.json';
-
 // ---------------------------------------------------------------------------
-// Backend detection
-// BLOB_STORE_ID is injected by Vercel when the blob store is connected via
-// the dashboard Projects tab (OIDC auth). BLOB_READ_WRITE_TOKEN is the
-// fallback for local dev with a static token.
-// ---------------------------------------------------------------------------
-
-function useBlob(): boolean {
-	return !!(env.BLOB_STORE_ID || env.BLOB_READ_WRITE_TOKEN);
-}
-
-// Explicit token for SDK calls — only set when using a static read-write
-// token. When undefined the SDK auto-resolves via OIDC (VERCEL_OIDC_TOKEN +
-// BLOB_STORE_ID), which is the production path.
-function blobToken(): string | undefined {
-	return env.BLOB_READ_WRITE_TOKEN || undefined;
-}
-
-// ---------------------------------------------------------------------------
-// Vercel Blob backend
-// ---------------------------------------------------------------------------
-
-async function blobLoadUsers(): Promise<User[]> {
-	const { get } = await import('@vercel/blob');
-	const token = blobToken();
-	const result = await get(USERS_BLOB_PATH, { access: 'private', ...(token ? { token } : {}) });
-	if (!result) return [];
-	const text = await new Response(result.stream).text();
-	return JSON.parse(text) as User[];
-}
-
-async function blobSaveUsers(users: User[]): Promise<void> {
-	const { put } = await import('@vercel/blob');
-	const token = blobToken();
-	await put(USERS_BLOB_PATH, JSON.stringify(users, null, 2), {
-		access: 'private',
-		addRandomSuffix: false,
-		...(token ? { token } : {}),
-	});
-}
-
-// ---------------------------------------------------------------------------
-// Local filesystem backend
+// Filesystem backend
 // ---------------------------------------------------------------------------
 
 async function fsLoadUsers(): Promise<User[]> {
 	const { readFile, mkdir } = await import('fs/promises');
 	const { join } = await import('path');
 	const dataDir = join(process.cwd(), 'data');
-	try {
-		await mkdir(dataDir, { recursive: true });
-	} catch {
-		// read-only fs (e.g. Vercel) — attempt read anyway
-	}
+	await mkdir(dataDir, { recursive: true });
 	try {
 		const raw = await readFile(join(dataDir, 'users.json'), 'utf-8');
 		return JSON.parse(raw) as User[];
@@ -79,11 +31,11 @@ async function fsSaveUsers(users: User[]): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function loadUsers(): Promise<User[]> {
-	return useBlob() ? blobLoadUsers() : fsLoadUsers();
+	return fsLoadUsers();
 }
 
 async function saveUsers(users: User[]): Promise<void> {
-	return useBlob() ? blobSaveUsers(users) : fsSaveUsers(users);
+	return fsSaveUsers(users);
 }
 
 export async function findUserByEmail(email: string): Promise<User | null> {
