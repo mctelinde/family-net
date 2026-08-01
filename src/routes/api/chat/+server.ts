@@ -236,6 +236,63 @@ const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknow
 		}
 	},
 
+	http_request: async (args) => {
+		const MAX_BODY_BYTES = 32 * 1024;
+		const baseUrl = (env.HTTP_TOOL_BASE_URL ?? 'http://localhost:5173').replace(/\/$/, '');
+
+		const rawUrl = typeof args.url === 'string' ? args.url : '';
+		if (!rawUrl) return { error: 'url is required' };
+
+		const resolvedUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+			? rawUrl
+			: `${baseUrl}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+
+		const method = typeof args.method === 'string' ? args.method.toUpperCase() : 'GET';
+		const allowedMethods = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+		if (!allowedMethods.has(method)) return { error: `method not allowed: ${method}` };
+
+		const reqHeaders: Record<string, string> = {
+			'Content-Type': 'application/json',
+		};
+		if (args.headers && typeof args.headers === 'object') {
+			for (const [k, v] of Object.entries(args.headers as Record<string, unknown>)) {
+				if (typeof v === 'string') reqHeaders[k] = v;
+			}
+		}
+
+		const reqInit: RequestInit = { method, headers: reqHeaders };
+		if (args.body && typeof args.body === 'string' && method !== 'GET' && method !== 'DELETE') {
+			reqInit.body = args.body;
+		}
+
+		try {
+			const res = await fetch(resolvedUrl, reqInit);
+			const text = await res.text();
+			const truncated = text.length > MAX_BODY_BYTES;
+			const bodyText = truncated ? text.slice(0, MAX_BODY_BYTES) : text;
+
+			let body: unknown;
+			try {
+				body = JSON.parse(bodyText);
+			} catch {
+				body = bodyText;
+			}
+
+			const resHeaders: Record<string, string> = {};
+			res.headers.forEach((v, k) => { resHeaders[k] = v; });
+
+			return {
+				status: res.status,
+				ok: res.ok,
+				headers: resHeaders,
+				body,
+				...(truncated ? { truncated: true, note: `Response body truncated to ${MAX_BODY_BYTES} bytes.` } : {}),
+			};
+		} catch (e: unknown) {
+			return { error: String(e) };
+		}
+	},
+
 	run_command: async (args) => {
 		const ALLOWED = new Set(['git', 'npm', 'npx', 'node', 'tsc', 'prettier', 'eslint']);
 		const rawCmd = typeof args.command === 'string' ? args.command.trim() : '';

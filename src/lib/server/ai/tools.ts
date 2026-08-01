@@ -172,6 +172,41 @@ export const DEV_TOOLS: ToolDefinition[] = [
 		},
 	},
 	{
+		name: 'http_request',
+		description:
+			'Make an HTTP request to the Family Net API or any allowed URL. ' +
+			'Relative URLs are resolved against HTTP_TOOL_BASE_URL (defaults to http://localhost:5173). ' +
+			'Returns status, headers, and the response body (JSON parsed when possible). ' +
+			'Response body is capped at 32 KB.',
+		parameters: {
+			type: 'object',
+			properties: {
+				method: {
+					type: 'string',
+					enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+					description: 'HTTP method. Defaults to GET.',
+				},
+				url: {
+					type: 'string',
+					description:
+						'URL to request. Relative paths (e.g. "/api/notebook") are resolved against the base URL.',
+				},
+				headers: {
+					type: 'object',
+					description: 'Optional additional request headers as key/value pairs.',
+					properties: {},
+					required: [],
+				},
+				body: {
+					type: 'string',
+					description:
+						'Optional request body. For JSON, pass a JSON-encoded string and set Content-Type: application/json.',
+				},
+			},
+			required: ['url'],
+		},
+	},
+	{
 		name: 'run_command',
 		description:
 			'Run a whitelisted shell command in the project root directory. ' +
