@@ -104,7 +104,9 @@ const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknow
 	search_files: async (args) => {
 		const MAX_RESULTS = 50;
 		const root    = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
-		const pattern = typeof args.pattern === 'string' ? args.pattern : '';
+		// Accept both 'pattern' and 'query' — model sometimes uses the latter
+		const pattern = (typeof args.pattern === 'string' ? args.pattern : '') ||
+		                (typeof args.query   === 'string' ? args.query   : '');
 		if (!pattern) return { error: 'pattern is required' };
 
 		const gitArgs = [
@@ -116,8 +118,8 @@ const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknow
 			pattern,
 		].filter(Boolean) as string[];
 
-		if (typeof args.glob === 'string' && args.glob) {
-			gitArgs.push(`:(glob)${args.glob}`);
+		if ((typeof args.glob === 'string' && args.glob) || (typeof args.file_pattern === 'string' && args.file_pattern)) {
+			gitArgs.push(`:(glob)${args.glob ?? args.file_pattern}`);
 		}
 
 		try {
