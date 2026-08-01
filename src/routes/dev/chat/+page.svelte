@@ -21,7 +21,18 @@
 
 	type HistoryMsg = { role: string; content: string | null };
 
+	type SavedConversation = {
+		id: string;
+		title: string;
+		savedAt: string;
+		turns: Turn[];
+		history: HistoryMsg[];
+		systemPrompt: string;
+	};
+
 	// ── State ─────────────────────────────────────────────────────────────────
+
+	const STORAGE_KEY = 'chat-tester-history';
 
 	const DEFAULT_SYSTEM_PROMPT =
 		`You are a helpful assistant for the Family Net notebook app. ` +
@@ -48,6 +59,10 @@
 	let showSystem   = $state(true);
 	let systemPrompt = $state(DEFAULT_SYSTEM_PROMPT);
 	let rawLog       = $state<string[]>([]);
+	let showHistory  = $state(false);
+	let savedConversations = $state<SavedConversation[]>([]);
+	// Track the ID of the conversation currently loaded, so saves update in place.
+	let activeConversationId = $state<string | null>(null);
 
 	let threadEl = $state<HTMLElement | undefined>(undefined);
 
@@ -61,13 +76,96 @@
 		setTimeout(() => threadEl?.scrollTo({ top: threadEl.scrollHeight, behavior: 'smooth' }), 0);
 	});
 
+	// Load saved conversations from localStorage on mount
+	$effect(() => {
+		try {
+			const raw = localStorage.getItem(STORAGE_KEY);
+			savedConversations = raw ? (JSON.parse(raw) as SavedConversation[]) : [];
+		} catch {
+			savedConversations = [];
+		}
+	});
+
+	// ── Persistence helpers ────────────────────────────────────────────────────
+
+	function saveCurrentConversation() {
+		const firstUserTurn = turns.find((t): t is UserTurn => t.role === 'user');
+		const title = firstUserTurn
+			? firstUserTurn.text.slice(0, 60) + (firstUserTurn.text.length > 60 ? '…' : '')
+			: 'Untitled conversation';
+
+		const now = new Date().toISOString();
+		const existing = activeConversationId
+			? savedConversations.findIndex(c => c.id === activeConversationId)
+			: -1;
+
+		const saved: SavedConversation = {
+			id: activeConversationId ?? crypto.randomUUID(),
+			title,
+			savedAt: now,
+			turns: JSON.parse(JSON.stringify(turns)) as Turn[],
+			history: JSON.parse(JSON.stringify(history)) as HistoryMsg[],
+			systemPrompt,
+		};
+
+		if (existing >= 0) {
+			savedConversations[existing] = saved;
+		} else {
+			activeConversationId = saved.id;
+			savedConversations.unshift(saved);
+		}
+
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(savedConversations));
+		} catch {
+			// localStorage quota exceeded — silently skip
+		}
+	}
+
+	function loadConversation(id: string) {
+		const conv = savedConversations.find(c => c.id === id);
+		if (!conv) return;
+		turns                = JSON.parse(JSON.stringify(conv.turns)) as Turn[];
+		history              = JSON.parse(JSON.stringify(conv.history)) as HistoryMsg[];
+		systemPrompt         = conv.systemPrompt;
+		streamEvents.length  = 0;
+		rawLog.length        = 0;
+		busy                 = false;
+		activeConversationId = conv.id;
+		showHistory          = false;
+	}
+
+	function deleteConversation(id: string) {
+		const idx = savedConversations.findIndex(c => c.id === id);
+		if (idx >= 0) savedConversations.splice(idx, 1);
+		if (activeConversationId === id) activeConversationId = null;
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(savedConversations));
+		} catch { /* empty */ }
+	}
+
+	function formatDate(iso: string): string {
+		const d = new Date(iso);
+		const now = new Date();
+		const diffMs = now.getTime() - d.getTime();
+		const diffMins = Math.floor(diffMs / 60_000);
+		if (diffMins < 1)   return 'just now';
+		if (diffMins < 60)  return `${diffMins}m ago`;
+		const diffHrs = Math.floor(diffMins / 60);
+		if (diffHrs < 24)   return `${diffHrs}h ago`;
+		const diffDays = Math.floor(diffHrs / 24);
+		if (diffDays < 7)   return `${diffDays}d ago`;
+		return d.toLocaleDateString();
+	}
+
 	// ── Actions ───────────────────────────────────────────────────────────────
 
 	function resetChat() {
-		turns        = [];
-		streamEvents = [];
-		history      = [];
-		rawLog       = [];
+		turns.length                = 0;
+		streamEvents.length         = 0;
+		history.length              = 0;
+		rawLog.length               = 0;
+		activeConversationId = null;
 		// systemPrompt is intentionally preserved across resets
 	}
 
@@ -91,9 +189,9 @@
 		turns.push({ role: 'user', text });
 		history.push({ role: 'user', content: text });
 
-		streamEvents = [];
-		busy         = true;
-		rawLog       = [];
+		streamEvents.length = 0;
+		busy                = true;
+		rawLog.length       = 0;
 
 		// Reset between tool-call iterations: each provider generator run
 		// starts at index 0, so we must clear the map when a tool_calls round ends.
@@ -211,11 +309,13 @@
 		} finally {
 			// Commit the completed turn into the turns array and clear the stream buffer.
 			turns.push({ role: 'assistant', events: [...streamEvents] });
-			streamEvents = [];
-			busy         = false;
+			streamEvents.length = 0;
+			busy                = false;
 			if (lastContent !== null) {
 				history.push({ role: 'assistant', content: lastContent });
 			}
+			// Save the conversation after message completes
+			saveCurrentConversation();
 		}
 	}
 </script>
@@ -236,9 +336,60 @@
 				<input type="checkbox" bind:checked={showRaw} />
 				Raw SSE
 			</label>
-			<button class="btn-ghost" onclick={resetChat} disabled={busy}>Clear</button>
+			<button
+				class="btn-ghost"
+				class:active={showHistory}
+				onclick={() => (showHistory = !showHistory)}
+				title="Browse past conversations"
+			>
+				History {#if savedConversations.length > 0}<span class="badge">{savedConversations.length}</span>{/if}
+			</button>
+			<button class="btn-ghost" onclick={resetChat} disabled={busy}>New chat</button>
 		</div>
 	</div>
+
+	{#if showHistory}
+		<div class="history-panel">
+			<div class="history-header">
+				<span>Saved conversations</span>
+				{#if savedConversations.length > 0}
+					<button
+						class="btn-ghost btn-xs"
+						onclick={() => {
+							if (confirm('Delete all saved conversations?')) {
+								savedConversations = [];
+								activeConversationId = null;
+								localStorage.removeItem(STORAGE_KEY);
+							}
+						}}
+					>Clear all</button>
+				{/if}
+			</div>
+			{#if savedConversations.length === 0}
+				<div class="history-empty">No saved conversations yet. Start chatting and they'll appear here.</div>
+			{:else}
+				<ul class="history-list">
+					{#each savedConversations as conv (conv.id)}
+						<li
+							class="history-item"
+							class:history-item-active={conv.id === activeConversationId}
+						>
+							<button class="history-load" onclick={() => loadConversation(conv.id)}>
+								<span class="history-title">{conv.title}</span>
+								<span class="history-meta">{formatDate(conv.savedAt)} · {conv.turns.filter(t => t.role === 'user').length} messages</span>
+							</button>
+							<button
+								class="history-delete"
+								onclick={() => deleteConversation(conv.id)}
+								title="Delete conversation"
+								aria-label="Delete conversation"
+							>✕</button>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+	{/if}
 
 	{#if showSystem}
 		<div class="system-panel">
@@ -256,7 +407,7 @@
 		<!-- ── Conversation thread ── -->
 		<div class="thread" bind:this={threadEl}>
 			{#if turns.length === 0 && !busy}
-				<div class="empty">Send a message to begin. Tool calls will appear inline.</div>
+					<div class="empty">Send a message to begin. Tool calls will appear inline.<br>Past conversations are saved automatically — use the History button to return to them.</div>
 			{/if}
 
 			{#each turns as turn}
@@ -398,9 +549,107 @@
 		font-size: 0.8rem;
 		color: #6b6b80;
 		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
 	}
 	.btn-ghost:hover:not(:disabled) { border-color: #1a1a2e; color: #1a1a2e; }
 	.btn-ghost:disabled { opacity: 0.45; cursor: default; }
+	.btn-ghost.active { border-color: #4f46e5; color: #4f46e5; background: #f0eff9; }
+	.btn-xs { padding: 0.15rem 0.45rem; font-size: 0.72rem; }
+
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: #4f46e5;
+		color: #fff;
+		border-radius: 10px;
+		font-size: 0.65rem;
+		font-weight: 700;
+		min-width: 1.2em;
+		padding: 0 0.25em;
+		line-height: 1.5;
+	}
+
+	/* ── History panel ── */
+	.history-panel {
+		background: #fff;
+		border: 1px solid #e5e3de;
+		border-radius: 10px;
+		flex-shrink: 0;
+		max-height: 220px;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	.history-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: #6b6b80;
+		border-bottom: 1px solid #e5e3de;
+		flex-shrink: 0;
+	}
+	.history-empty {
+		padding: 0.75rem;
+		font-size: 0.8rem;
+		color: #9b9baa;
+		text-align: center;
+	}
+	.history-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		overflow-y: auto;
+	}
+	.history-item {
+		display: flex;
+		align-items: center;
+		border-bottom: 1px solid #f0eeea;
+	}
+	.history-item:last-child { border-bottom: none; }
+	.history-item-active { background: #f0eff9; }
+	.history-load {
+		flex: 1;
+		background: none;
+		border: none;
+		text-align: left;
+		padding: 0.5rem 0.75rem;
+		cursor: pointer;
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+		min-width: 0;
+	}
+	.history-load:hover { background: #f7f6f3; }
+	.history-item-active .history-load:hover { background: #e9e8f7; }
+	.history-title {
+		font-size: 0.82rem;
+		color: #1a1a2e;
+		font-weight: 500;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.history-meta {
+		font-size: 0.7rem;
+		color: #9b9baa;
+	}
+	.history-delete {
+		background: none;
+		border: none;
+		color: #c4c2bb;
+		cursor: pointer;
+		padding: 0.5rem 0.65rem;
+		font-size: 0.75rem;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+	.history-delete:hover { color: #dc2626; }
 
 	/* ── Body ── */
 	.body {

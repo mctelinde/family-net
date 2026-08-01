@@ -14,7 +14,7 @@
 		"test": "npm run test:unit -- --run"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-node": "^5.2.11",
+		"@sveltejs/adapter-vercel": "^6.3.3",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@types/node": "^26.1.1",
@@ -26,6 +26,8 @@
 		"vitest": "^4.1.8"
 	},
 	"dependencies": {
+		"@sveltejs/adapter-auto": "^7.0.1",
+		"@vercel/blob": "^2.6.1",
 		"gray-matter": "^4.0.3",
 		"marked": "^18.0.6"
 	}

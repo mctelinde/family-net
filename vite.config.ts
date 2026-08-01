@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { mdsvex } from 'mdsvex';
-import adapter from '@sveltejs/adapter-node';
+import adapter from '@sveltejs/adapter-auto';
 import { sveltekit } from '@sveltejs/kit/vite';
 
 export default defineConfig({
