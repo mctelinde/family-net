@@ -119,11 +119,14 @@ export const DEV_TOOLS: ToolDefinition[] = [
 		description:
 			'Read the text content of a file on the server. ' +
 			'Paths are relative to the project root or absolute. ' +
-			'Returns the file content as a string, or an error object.',
+			'Returns the file content as a string, or an error object. ' +
+			'For large files, use start_line and end_line to read a specific range of lines.',
 		parameters: {
 			type: 'object',
 			properties: {
 				path: { type: 'string', description: 'File path to read (relative to project root or absolute).' },
+				start_line: { type: 'integer', description: 'First line to return (1-based, inclusive). Omit to start from line 1.' },
+				end_line: { type: 'integer', description: 'Last line to return (1-based, inclusive). Omit to read to end of file.' },
 			},
 			required: ['path'],
 		},

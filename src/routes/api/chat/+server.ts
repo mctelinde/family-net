@@ -103,7 +103,10 @@ const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknow
 
 	list_dir: async (args) => {
 		const root     = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
-		const raw      = (typeof args.path === 'string' && args.path ? args.path : '.').replace(/^[/\\]+/, '');
+		// Accept 'path', 'directory', or 'dir_path'
+		const raw      = ((typeof args.path === 'string' ? args.path : '') ||
+		                  (typeof args.directory === 'string' ? args.directory : '') ||
+		                  (typeof args.dir_path === 'string' ? args.dir_path : '') || '.').replace(/^[/\\]+/, '') || '.';
 		const resolved = path.resolve(root, raw);
 		if (!resolved.startsWith(root)) return { error: 'path traversal not allowed' };
 		try {
@@ -119,22 +122,52 @@ const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknow
 	},
 
 	read_file: async (args) => {
+		const MAX_CHARS = 8_000;
 		const root = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
-		const raw   = (typeof args.path === 'string' ? args.path : '').replace(/^[/\\]+/, '');
-		if (!raw) return { error: 'path is required' };
+		// Accept both 'path' and 'file_path' — model sometimes uses the latter
+		const raw   = ((typeof args.path === 'string' ? args.path : '') ||
+		               (typeof args.file_path === 'string' ? args.file_path : '')).replace(/^[/\\]+/, '');
+		if (!raw) return { error: 'path is required. Provide the relative path from the project root, e.g. "src/lib/server/ai/tools.ts"' };
 		const resolved = path.resolve(root, raw);
-		if (!resolved.startsWith(root)) return { error: 'path traversal not allowed' };
+		if (!resolved.startsWith(root)) return { error: `path traversal not allowed. Use a path relative to the project root (${root})` };
 		try {
-			const content = await fs.readFile(resolved, 'utf-8');
-			return { path: resolved, content };
+			const full  = await fs.readFile(resolved, 'utf-8');
+			let lines   = full.split('\n');
+			const total = lines.length;
+
+			const startLine = typeof args.start_line === 'number' ? Math.max(1, args.start_line) : 1;
+			const endLine   = typeof args.end_line   === 'number' ? Math.min(total, args.end_line) : total;
+			lines = lines.slice(startLine - 1, endLine);
+
+			let content  = lines.join('\n');
+			let truncated = false;
+			if (content.length > MAX_CHARS) {
+				content   = content.slice(0, MAX_CHARS);
+				truncated = true;
+			}
+
+			return {
+				path: raw,
+				content,
+				start_line: startLine,
+				end_line: startLine + lines.length - 1,
+				total_lines: total,
+				...(truncated ? { truncated: true, note: `Output truncated to ${MAX_CHARS} chars. Use start_line/end_line to read other sections.` } : {}),
+			};
 		} catch (e: unknown) {
-			return { error: String(e) };
+			const msg = String(e);
+			if (msg.includes('ENOENT')) {
+				return { error: `file not found: ${raw}. Use list_dir to confirm the correct path.` };
+			}
+			return { error: msg };
 		}
 	},
 
 	write_file: async (args) => {
 		const root    = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
-		const raw     = (typeof args.path === 'string' ? args.path : '').replace(/^[/\\]+/, '');
+		// Accept both 'path' and 'file_path'
+		const raw     = ((typeof args.path === 'string' ? args.path : '') ||
+		                 (typeof args.file_path === 'string' ? args.file_path : '')).replace(/^[/\\]+/, '');
 		const content = typeof args.content === 'string' ? args.content : '';
 		if (!raw) return { error: 'path is required' };
 		const resolved = path.resolve(root, raw);

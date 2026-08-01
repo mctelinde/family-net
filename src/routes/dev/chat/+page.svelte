@@ -31,7 +31,8 @@
 		(devToolsEnabled
 			? `\n\nDev tools are available: use run_command to run git, npm, npx, node, tsc, prettier, or eslint commands; ` +
 			  `use read_file to read files; use write_file to write files; use list_dir to explore directories. ` +
-			  `When the user asks you to run a command or read/write a file, call the appropriate tool directly.`
+			  `When the user asks you to run a command or read/write a file, call the appropriate tool directly. ` +
+			  `If a tool returns an error, report the exact error to the user — do not try alternative tools.`
 			: '');
 
 	// Committed turns (user messages + completed assistant responses).
