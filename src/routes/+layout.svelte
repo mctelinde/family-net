@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { LayoutData } from "./$types";
 	import favicon from "$lib/assets/favicon.svg";
+	import { dev } from '$app/environment';
 
 	let { children, data }: { children: import("svelte").Snippet; data: LayoutData } = $props();
 
@@ -31,6 +32,9 @@
 					<a href="/api/tools?format=openapi" target="_blank" class="nav-link ext">OpenAPI schema</a>
 					<a href="/api/tools?format=openai" target="_blank" class="nav-link ext">OpenAI tools</a>
 					<a href="/api/tools?format=anthropic" target="_blank" class="nav-link ext">Anthropic tools</a>
+					{#if dev}
+						<a href="/dev/chat" class="nav-link">Chat tester</a>
+					{/if}
 				</div>
 			</div>
 
@@ -66,7 +70,23 @@
 	:global(.prose blockquote) { border-left: 3px solid #e5e3de; padding-left: 1rem; color: #6b6b80; margin: 1em 0; font-style: italic; }
 	:global(.prose strong) { font-weight: 700; color: #1a1a2e; }
 	:global(.prose hr) { border: none; border-top: 1px solid #e5e3de; margin: 2em 0; }
-	:global(.prose table) { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.875rem; }
+	:global(.prose table) {
+		min-width: 0;
+		border-collapse: collapse;
+		margin: 0.75rem 0;
+		font-size: 0.875rem;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+	:global(.prose thead th),
+	:global(.prose tbody td) {
+		overflow-wrap: anywhere;
+		word-break: normal;
+	}
+	:global(.prose img) {
+		max-width: 100%;
+		height: auto;
+	}
 	:global(.prose thead th) { background: #f4f4f5; border: 1px solid #e5e3de; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: #1a1a2e; font-size: 0.82rem; }
 	:global(.prose tbody td) { border: 1px solid #e5e3de; padding: 0.5rem 0.75rem; color: #3d3d4d; }
 	:global(.prose tbody tr:nth-child(even) td) { background: #fafaf8; }

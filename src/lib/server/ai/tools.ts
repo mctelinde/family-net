@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/private';
 import type { ToolDefinition, ToolSchemaFormat } from './types';
 
 /** Canonical tool definitions for the Family Net notebook API */
@@ -94,6 +95,68 @@ export const NOTEBOOK_TOOLS: ToolDefinition[] = [
 	},
 ];
 
+/** Dev-only tools — only included when ENABLE_DEV_TOOLS=true in env. */
+export const DEV_TOOLS: ToolDefinition[] = [
+	{
+		name: 'read_file',
+		description:
+			'Read the text content of a file on the server. ' +
+			'Paths are relative to the project root or absolute. ' +
+			'Returns the file content as a string, or an error object.',
+		parameters: {
+			type: 'object',
+			properties: {
+				path: { type: 'string', description: 'File path to read (relative to project root or absolute).' },
+			},
+			required: ['path'],
+		},
+	},
+	{
+		name: 'write_file',
+		description:
+			'Write text content to a file on the server, creating it if it does not exist. ' +
+			'Paths are relative to the project root or absolute. ' +
+			'Existing files are overwritten.',
+		parameters: {
+			type: 'object',
+			properties: {
+				path: { type: 'string', description: 'File path to write (relative to project root or absolute).' },
+				content: { type: 'string', description: 'Full text content to write to the file.' },
+			},
+			required: ['path', 'content'],
+		},
+	},
+	{
+		name: 'run_command',
+		description:
+			'Run a whitelisted shell command in the project root directory. ' +
+			'Allowed executables: git, npm, npx, node, tsc, prettier, eslint. ' +
+			'Pass arguments as an array. Returns stdout, stderr, and exit code. ' +
+			'Execution is capped at 30 seconds.',
+		parameters: {
+			type: 'object',
+			properties: {
+				command: {
+					type: 'string',
+					enum: ['git', 'npm', 'npx', 'node', 'tsc', 'prettier', 'eslint'],
+					description: 'The executable to run.',
+				},
+				args: {
+					type: 'array',
+					items: { type: 'string' },
+					description: 'Command-line arguments to pass to the executable.',
+				},
+			},
+			required: ['command'],
+		},
+	},
+];
+
+/** Returns the active tool set: notebook tools, plus dev tools when enabled. */
+export function getActiveTools(): ToolDefinition[] {
+	return env.ENABLE_DEV_TOOLS === 'true' ? [...NOTEBOOK_TOOLS, ...DEV_TOOLS] : NOTEBOOK_TOOLS;
+}
+
 /** Export tool definitions in the format expected by each LLM provider */
 export function exportTools(format: ToolSchemaFormat): unknown {
 	switch (format) {
@@ -138,6 +201,51 @@ function buildOpenAPISpec(): unknown {
 			},
 		},
 		paths: {
+			'/chat': {
+				post: {
+					operationId: 'chat_stream',
+					summary: 'Streaming chat with tool-use loop over the notebook API',
+					security: [{ bearerAuth: [] }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									required: ['messages'],
+									properties: {
+										messages: {
+											type: 'array',
+											description:
+												'Conversation history. Each item has `role` ("user"|"assistant"|"system"|"tool"), `content`, and optional `tool_calls` / `tool_call_id` fields.',
+											items: { type: 'object' },
+										},
+										model: {
+											type: 'string',
+											description: 'Override the configured model for this request.',
+										},
+										maxTokens: { type: 'integer', default: 2048 },
+										temperature: { type: 'number', default: 0.7 },
+										stream: { type: 'boolean', default: true },
+									},
+								},
+							},
+						},
+					},
+					responses: {
+						'200': {
+							description:
+								'text/event-stream of ChatChunk deltas, terminated by `data:[DONE]`.',
+							content: {
+								'text/event-stream': { schema: { type: 'string' } },
+							},
+						},
+						'400': { description: 'Missing or malformed `messages` field.' },
+						'401': { description: 'Missing or bad bearer token.' },
+						'503': { description: 'AI provider not configured.' },
+					},
+				},
+			},
 			'/notebook': {
 				get: {
 					operationId: 'list_entries',

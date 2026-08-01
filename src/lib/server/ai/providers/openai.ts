@@ -5,20 +5,44 @@ import { exportTools } from '../tools';
  * Parses a Hermes-style tool-call block emitted by models like qwen2.5-coder
  * that do not use the OpenAI delta.tool_calls channel.
  *
- * Expected format in content text:
- *   <tool_call>
- *   {"name": "some_tool", "parameters": {...}}
- *   </tool_call>
+ * Supports two formats:
+ *   Tagged:   <tool_call>{"name":"...", "parameters":{...}}</tool_call>
+ *   Raw JSON: {"name":"...", "arguments":{...}}  (no wrapper tags)
  *
- * Returns null if the text does not contain a valid block.
+ * Accepts both "parameters" and "arguments" as the args field name.
+ * Takes only the first complete top-level JSON object when multiple appear.
+ * Returns null if no recognisable tool call is found.
  */
 function extractHermesToolCall(raw: string): { name: string; argumentsJson: string } | null {
-	const match = raw.match(/<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/);
-	if (!match) return null;
+	// 1. Try <tool_call>...</tool_call> format
+	const tagged = raw.match(/<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/);
+	if (tagged) return parseToolJson(tagged[1].trim());
+
+	// 2. Try raw JSON — walk the string to find the first complete top-level object
+	const first = raw.indexOf('{');
+	if (first === -1) return null;
+
+	let depth = 0, inStr = false, escape = false;
+	for (let i = first; i < raw.length; i++) {
+		const ch = raw[i];
+		if (escape)              { escape = false; continue; }
+		if (ch === '\\' && inStr){ escape = true;  continue; }
+		if (ch === '"')          { inStr = !inStr;  continue; }
+		if (inStr) continue;
+		if (ch === '{') depth++;
+		if (ch === '}' && --depth === 0) return parseToolJson(raw.slice(first, i + 1));
+	}
+	return null;
+}
+
+function parseToolJson(src: string): { name: string; argumentsJson: string } | null {
 	try {
-		const obj = JSON.parse(match[1]) as { name?: unknown; parameters?: unknown };
+		const obj = JSON.parse(src) as { name?: unknown; parameters?: unknown; arguments?: unknown };
 		if (typeof obj.name !== 'string') return null;
-		return { name: obj.name, argumentsJson: JSON.stringify(obj.parameters ?? {}) };
+		return {
+			name:          obj.name,
+			argumentsJson: JSON.stringify(obj.parameters ?? obj.arguments ?? {}),
+		};
 	} catch {
 		return null;
 	}
@@ -84,9 +108,24 @@ export class OpenAIProvider implements AIProvider {
 	 * ends the iterator. Non-2xx → throws (route maps to 502).
 	 */
 	async *chat(request: ChatRequest, signal: AbortSignal): AsyncIterable<ChatChunk> {
+		// Translate internal ToolCall shape → OpenAI wire format before sending.
+		// Our ToolCall uses { id, name, arguments }; the API requires
+		// { id, type:'function', function:{ name, arguments } }.
+		const messages = request.messages.map((m) => {
+			if (!m.tool_calls?.length) return m;
+			return {
+				...m,
+				tool_calls: m.tool_calls.map((tc) => ({
+					id:       tc.id,
+					type:     'function' as const,
+					function: { name: tc.name, arguments: tc.arguments },
+				})),
+			};
+		});
+
 		const body = JSON.stringify({
 			model: request.model ?? this.defaultModel,
-			messages: request.messages,
+			messages,
 			stream: request.stream ?? true,
 			max_tokens: request.maxTokens ?? 2048,
 			temperature: request.temperature ?? 0.7,
@@ -116,6 +155,7 @@ export class OpenAIProvider implements AIProvider {
 
 		const reader = response.body.getReader();
 		let buf = '';
+		let contentStreamed = false; // true once any content delta has been forwarded to the client
 		try {
 			while (true) {
 				const { done, value } = await reader.read();
@@ -165,12 +205,20 @@ export class OpenAIProvider implements AIProvider {
 
 						if (typeof delta.content === 'string' && delta.content.length > 0) {
 							contentBuf += delta.content;
-								// Once a Hermes <tool_call> sentinel appears, suppress content
-								// deltas so raw JSON is never forwarded to the client.
-								if (!contentBuf.includes('<tool_call>')) {
+								// Suppress content that looks like a Hermes tool call:
+								// - wrapped in <tool_call> tags
+								// - raw JSON starting with '{'
+								// - markdown code block (```json\n{...}\n```) starting with '`'
+								// The fallback flush at finish_reason emits the buffer as text
+								// if extractHermesToolCall returns null (not actually a tool call).
+								const suppress = contentBuf.includes('<tool_call>') ||
+									contentBuf.trimStart().startsWith('{') ||
+									contentBuf.trimStart().startsWith('`');
+								if (!suppress) {
 									out.delta.content = delta.content;
+									contentStreamed = true;
 								}
-						}
+							}
 
 						if (delta.tool_calls && delta.tool_calls.length > 0) {
 							out.delta.tool_calls = [];
@@ -233,9 +281,9 @@ export class OpenAIProvider implements AIProvider {
 										yield { delta: {}, finish_reason: 'tool_calls' };
 										return;
 									}
-									// No Hermes block — if content was suppressed for any reason,
-									// flush it now before emitting the stop signal.
-									if (contentBuf && out.delta.content === undefined) {
+									// No Hermes block — if content was suppressed (never streamed),
+									// flush it now as a single text delta before the stop signal.
+									if (contentBuf && !contentStreamed) {
 										yield { delta: { content: contentBuf } };
 									}
 								}
