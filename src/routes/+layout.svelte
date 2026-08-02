@@ -28,7 +28,14 @@
 				</div>
 
 				<div class="nav-section">
-					<span class="nav-label">API and Agents</span>
+					<span class="nav-label">Agents</span>
+					{#if dev}
+						<a href="/dev/chat" class="nav-link">Chat tester</a>
+					{/if}
+				</div>
+
+				<div class="nav-section">
+					<span class="nav-label">API</span>
 					<a href="/api/tools?format=openapi" target="_blank" class="nav-link ext">OpenAPI schema</a>
 					<a href="/api/tools?format=openai" target="_blank" class="nav-link ext">OpenAI tools</a>
 					<a href="/api/tools?format=anthropic" target="_blank" class="nav-link ext">Anthropic tools</a>

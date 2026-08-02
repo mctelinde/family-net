@@ -41,7 +41,7 @@ const sseHeaders = {
 const encode = (chunk: ChatChunk): string => `data: ${JSON.stringify(chunk)}\n\n`;
 const done = (): string => `data: [DONE]\n\n`;
 
-const MAX_TOOL_ITERATIONS = 5;
+const MAX_TOOL_ITERATIONS = 15;
 const STREAM_TIMEOUT_MS = 55_000; // sits under Vercel's 60s ceiling
 
 /** Tool dispatch table — calls storage under the agent identity. */

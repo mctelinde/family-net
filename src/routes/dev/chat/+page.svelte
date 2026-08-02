@@ -40,12 +40,20 @@
 		`After receiving a tool result, use the data to answer the user directly. ` +
 		`Do not call the same tool more than once unless the result was an error.` +
 		(devToolsEnabled
-			? `\n\nDev tools are available: use run_command to run git, npm, npx, node, tsc, prettier, or eslint commands; ` +
-			  `use search_files to search for text or symbols across the codebase; ` +
-			  `use list_dir to explore directories; use read_file to read files; use write_file to write files. ` +
-			  `When the user asks you to run a command or read/write a file, call the appropriate tool directly. ` +
-			  `If a tool returns an error, report the exact error to the user — do not try alternative tools.`
+			? `\n\nBEFORE answering ANY question about code architecture or file locations:\n` +
+			  `1. FIRST use read_file to read ARCHITECTURE.md from the project root\n` +
+			  `2. Review the structure and key file locations\n` +
+			  `3. THEN answer the user's question based on the actual project layout\n\n` +
+			  `When asked to modify code:\n` +
+			  `1. Read ARCHITECTURE.md to understand the project structure\n` +
+			  `2. Use read_file to get the current file content\n` +
+			  `3. Make ONLY the specific changes the user requested\n` +
+			  `4. Use write_file with the complete modified file\n` +
+			  `5. Stop. Do not call tools again unless the user asks.\n\n` +
+			  `Available tools: read_file, write_file, run_command, search_files, list_dir`
 			: '');
+
+
 
 	// Committed turns (user messages + completed assistant responses).
 	let turns        = $state<Turn[]>([]);
@@ -63,6 +71,8 @@
 	let savedConversations = $state<SavedConversation[]>([]);
 	// Track the ID of the conversation currently loaded, so saves update in place.
 	let activeConversationId = $state<string | null>(null);
+	// Track whether we've auto-loaded to prevent re-loading on every effect run
+	let hasAutoLoadedOnMount = $state(false);
 
 	let threadEl = $state<HTMLElement | undefined>(undefined);
 
@@ -81,6 +91,12 @@
 		try {
 			const raw = localStorage.getItem(STORAGE_KEY);
 			savedConversations = raw ? (JSON.parse(raw) as SavedConversation[]) : [];
+			// Auto-load the latest conversation only once on initial page load
+			if (!hasAutoLoadedOnMount && savedConversations.length > 0 && turns.length === 0) {
+				hasAutoLoadedOnMount = true;
+				const latest = savedConversations[0];
+				loadConversation(latest.id);
+			}
 		} catch {
 			savedConversations = [];
 		}
@@ -165,8 +181,8 @@
 		streamEvents.length         = 0;
 		history.length              = 0;
 		rawLog.length               = 0;
-		activeConversationId = null;
-		// systemPrompt is intentionally preserved across resets
+		activeConversationId        = null;
+		systemPrompt                = DEFAULT_SYSTEM_PROMPT;
 	}
 
 	function onKey(e: KeyboardEvent) {
@@ -179,6 +195,32 @@
 	function prettyArgs(raw: string): string {
 		try { return JSON.stringify(JSON.parse(raw), null, 2); }
 		catch { return raw || '{}'; }
+	}
+
+	function eventsToMarkdown(events: StreamEvent[]): string {
+		let md = '';
+		for (const ev of events) {
+			if (ev.kind === 'text') {
+				md += ev.content + '\n\n';
+			} else if (ev.kind === 'tool') {
+				md += `**Tool: ${ev.name}**\n\`\`\`json\n${prettyArgs(ev.args)}\n\`\`\`\n\n`;
+			} else if (ev.kind === 'error') {
+				md += `⚠️ **Error:** ${ev.message}\n\n`;
+			}
+		}
+		return md.trim();
+	}
+
+	async function copyResponseToClipboard(events: StreamEvent[]) {
+		const markdown = eventsToMarkdown(events);
+		try {
+			await navigator.clipboard.writeText(markdown);
+			// Show brief success feedback
+			const tempMsg = 'Copied to clipboard!';
+			// You could show a toast here if available
+		} catch (err) {
+			console.error('Failed to copy:', err);
+		}
 	}
 
 	async function sendMessage() {
@@ -328,14 +370,22 @@
 	<div class="toolbar">
 		<h1>Chat tester</h1>
 		<div class="toolbar-actions">
-			<label class="toggle">
-				<input type="checkbox" bind:checked={showSystem} />
-				Edit system prompt
-			</label>
-			<label class="toggle">
-				<input type="checkbox" bind:checked={showRaw} />
-				Raw SSE
-			</label>
+			<div class="toggle-group">
+				<input 
+					type="checkbox" 
+					id="raw-sse-toggle"
+					bind:checked={showRaw}
+					class="circular-toggle"
+				/>
+				<label for="raw-sse-toggle" class="toggle-label">Raw SSE</label>
+			</div>
+			<button
+				class="btn-ghost"
+				onclick={() => (showSystem = true)}
+				title="Edit system prompt"
+			>
+				⚙ Prompt
+			</button>
 			<button
 				class="btn-ghost"
 				class:active={showHistory}
@@ -392,15 +442,24 @@
 	{/if}
 
 	{#if showSystem}
-		<div class="system-panel">
-			<label class="system-label" for="sysprompt">System prompt (always sent — edit or clear to change)</label>
-			<textarea
-				id="sysprompt"
-				class="system-textarea"
-				bind:value={systemPrompt}
-				rows="3"
-				placeholder="Leave blank to send no system message."
-			></textarea>
+		<div class="modal-overlay" onclick={() => (showSystem = false)}>
+			<div class="modal" onclick={(e) => e.stopPropagation()}>
+				<div class="modal-header">
+					<h2>System Prompt</h2>
+					<button class="modal-close" onclick={() => (showSystem = false)}>✕</button>
+				</div>
+				<label class="modal-label" for="sysprompt">Edit or clear to change:</label>
+				<textarea
+					id="sysprompt"
+					class="modal-textarea"
+					bind:value={systemPrompt}
+					rows="10"
+					placeholder="Leave blank to send no system message."
+				></textarea>
+				<div class="modal-footer">
+					<button class="btn-primary" onclick={() => (showSystem = false)}>Done</button>
+				</div>
+			</div>
 		</div>
 	{/if}
 	<div class="body" class:with-raw={showRaw}>
@@ -417,6 +476,11 @@
 					</div>
 				{:else}
 					<div class="bubble assistant">
+						<button 
+							class="copy-btn" 
+							title="Copy response as markdown"
+							onclick={() => copyResponseToClipboard(turn.events)}
+						>📋 Copy</button>
 						{#each turn.events as ev}
 							{#if ev.kind === 'text'}
 									<div class="text prose">{@html marked(ev.content)}</div>
@@ -455,7 +519,27 @@
 						<span class="cursor" style="display:block; margin-top:2px;"></span>
 					{/if}
 				</div>
-			{/if}
+				{:else if streamEvents.length > 0}
+					<div class="bubble assistant">
+						<button 
+							class="copy-btn" 
+							title="Copy response as markdown"
+							onclick={() => copyResponseToClipboard(streamEvents)}
+						>📋 Copy</button>
+						{#each streamEvents as ev}
+							{#if ev.kind === 'text'}
+								<div class="text prose">{@html marked(ev.content)}</div>
+							{:else if ev.kind === 'tool'}
+								<div class="tool-card">
+									<div class="tool-name">⚙ {ev.name}</div>
+									<pre class="tool-args">{prettyArgs(ev.args)}</pre>
+								</div>
+							{:else if ev.kind === 'error'}
+								<div class="error-msg">⚠ {ev.message}</div>
+							{/if}
+						{/each}
+					</div>
+				{/if}
 		</div>
 
 		<!-- ── Raw SSE log ── -->
@@ -494,29 +578,139 @@
 		gap: 0.75rem;
 	}
 
-	/* ── System prompt panel ── */
-	.system-panel {
+	/* ── Modal ── */
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 999;
+	}
+	.modal {
+		background: #fff;
+		border-radius: 12px;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+		width: 90%;
+		max-width: 600px;
+		max-height: 80vh;
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
-		flex-shrink: 0;
-		background: #fff;
-		border: 1px solid #e5e3de;
-		border-radius: 10px;
-		padding: 0.65rem 0.85rem;
 	}
-	.system-label { font-size: 0.75rem; font-weight: 600; color: #6b6b80; }
-	.system-textarea {
-		resize: vertical;
-		min-height: 60px;
+	.modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1rem 1.25rem;
+		border-bottom: 1px solid #e5e3de;
+		flex-shrink: 0;
+	}
+	.modal-header h2 {
+		margin: 0;
+		font-size: 1rem;
+		color: #1a1a2e;
+	}
+	.modal-close {
+		background: none;
 		border: none;
-		outline: none;
+		font-size: 1.2rem;
+		color: #6b6b80;
+		cursor: pointer;
+		padding: 0;
+		width: 24px;
+		height: 24px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.modal-close:hover { color: #1a1a2e; }
+	.modal-label {
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: #6b6b80;
+		padding: 0 1.25rem;
+		padding-top: 1rem;
+		display: block;
+	}
+	.modal-textarea {
+		flex: 1;
+		margin: 0.5rem 1.25rem;
+		resize: none;
+		border: 1px solid #e5e3de;
+		border-radius: 8px;
+		padding: 0.75rem;
 		font-family: inherit;
 		font-size: 0.82rem;
 		color: #1a1a2e;
 		line-height: 1.5;
 		background: transparent;
+		outline: none;
 	}
+	.modal-textarea:focus { border-color: #4f46e5; }
+	.modal-footer {
+		display: flex;
+		justify-content: flex-end;
+		padding: 1rem 1.25rem;
+		border-top: 1px solid #e5e3de;
+		flex-shrink: 0;
+	}
+	.btn-primary {
+		background: #4f46e5;
+		color: #fff;
+		border: none;
+		border-radius: 8px;
+		padding: 0.5rem 1rem;
+		font-size: 0.88rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.12s;
+	}
+	.btn-primary:hover { background: #4338ca; }
+
+	/* ── Circular toggle switch ── */
+	.toggle-group {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.toggle-label {
+		font-size: 0.8rem;
+		color: #6b6b80;
+		cursor: pointer;
+		user-select: none;
+	}
+	.circular-toggle {
+		appearance: none;
+		width: 40px;
+		height: 24px;
+		background: #d4d2cc;
+		border: none;
+		border-radius: 12px;
+		cursor: pointer;
+		position: relative;
+		transition: background 0.3s;
+		padding: 0;
+	}
+	.circular-toggle::before {
+		content: '';
+		position: absolute;
+		width: 20px;
+		height: 20px;
+		background: #fff;
+		border-radius: 50%;
+		top: 2px;
+		left: 2px;
+		transition: left 0.3s;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+	.circular-toggle:checked {
+		background: #4f46e5;
+	}
+	.circular-toggle:checked::before {
+		left: 18px;
+	}
+
 
 	/* ── Toolbar ── */
 	.toolbar {
@@ -702,6 +896,30 @@
 		border-bottom-left-radius: 3px;
 		color: #1a1a2e;
 		max-width: 90%;
+		position: relative;
+	}
+
+	.copy-btn {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+		background: none;
+		border: 1px solid #e5e3de;
+		color: #6b6b80;
+		padding: 0.25rem 0.5rem;
+		font-size: 0.75rem;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: all 0.2s;
+		opacity: 0;
+		pointer-events: none;
+	}
+	.bubble.assistant:hover .copy-btn {
+		opacity: 1;
+		pointer-events: auto;
+		background: #f0eff9;
+		border-color: #4f46e5;
+		color: #4f46e5;
 	}
 	.text { display: block; }
 	/* prose resets for inside bubbles */
