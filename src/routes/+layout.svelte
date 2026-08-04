@@ -2,6 +2,7 @@
 	import type { LayoutData } from "./$types";
 	import favicon from "$lib/assets/favicon.svg";
 	import { dev } from '$app/environment';
+	import { afterNavigate } from '$app/navigation';
 
 	let { children, data }: { children: import("svelte").Snippet; data: LayoutData } = $props();
 
@@ -9,6 +10,8 @@
 	const isAuth = $derived(!!user);
 
 	let navExpanded = $state(false);
+
+	afterNavigate(() => { navExpanded = false; });
 </script>
 
 <svelte:head>

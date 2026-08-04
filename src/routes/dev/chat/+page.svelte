@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { marked } from 'marked';
 	import type { PageData } from './$types';
+	import { Settings, SquarePen } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
 	const { devToolsEnabled } = data;
@@ -405,20 +406,23 @@
 			</div>
 			<button
 				class="btn-ghost"
-				onclick={() => (showSystem = true)}
-				title="Edit system prompt"
-			>
-				⚙ Prompt
-			</button>
-			<button
-				class="btn-ghost"
 				class:active={showHistory}
 				onclick={() => (showHistory = !showHistory)}
 				title="Browse past conversations"
 			>
 				History {#if savedConversations.length > 0}<span class="badge">{savedConversations.length}</span>{/if}
 			</button>
-			<button class="btn-ghost" onclick={resetChat} disabled={busy}>New chat</button>
+			<button
+				class="btn-ghost"
+				onclick={() => (showSystem = true)}
+				title="Edit system prompt"
+				aria-label="Edit system prompt"
+			>
+				<Settings size={16} aria-hidden="true" />
+			</button>
+			<button class="btn-ghost" onclick={resetChat} disabled={busy} title="New chat" aria-label="New chat">
+				<SquarePen size={16} aria-hidden="true" />
+			</button>
 		</div>
 	</div>
 

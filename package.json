@@ -29,6 +29,7 @@
 		"@sveltejs/adapter-auto": "^7.0.1",
 		"@vercel/blob": "^2.6.1",
 		"gray-matter": "^4.0.3",
+		"lucide-svelte": "^1.0.1",
 		"marked": "^18.0.6"
 	}
 }
