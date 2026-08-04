@@ -30,7 +30,7 @@
 				<div class="nav-section">
 					<span class="nav-label">Agents</span>
 					{#if dev}
-						<a href="/dev/chat" class="nav-link">Chat tester</a>
+						<a href="/dev/chat" class="nav-link">Chat</a>
 					{/if}
 				</div>
 

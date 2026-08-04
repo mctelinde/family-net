@@ -69,6 +69,7 @@
 	let systemPrompt = $state(DEFAULT_SYSTEM_PROMPT);
 	let rawLog       = $state<string[]>([]);
 	let showHistory  = $state(false);
+	let expandedTools = $state(new Set<string>());
 	let savedConversations = $state<SavedConversation[]>([]);
 	// Track the ID of the conversation currently loaded, so saves update in place.
 	let activeConversationId = $state<string | null>(null);
@@ -196,6 +197,28 @@
 	function prettyArgs(raw: string): string {
 		try { return JSON.stringify(JSON.parse(raw), null, 2); }
 		catch { return raw || '{}'; }
+	}
+
+	/** Returns a short inline summary of the most relevant tool argument. */
+	function toolSummary(args: string): string {
+		try {
+			const obj = JSON.parse(args) as Record<string, unknown>;
+			const priority = ['path', 'file_path', 'filename', 'command', 'pattern', 'query'];
+			for (const key of priority) {
+				if (typeof obj[key] === 'string') return obj[key] as string;
+			}
+			// Fall back to the first string value
+			for (const val of Object.values(obj)) {
+				if (typeof val === 'string') return val;
+			}
+		} catch { /* empty */ }
+		return '';
+	}
+
+	function toggleTool(key: string) {
+		const next = new Set(expandedTools);
+		if (next.has(key)) next.delete(key); else next.add(key);
+		expandedTools = next;
 	}
 
 	function eventsToMarkdown(events: StreamEvent[]): string {
@@ -364,12 +387,12 @@
 </script>
 
 <svelte:head>
-	<title>Chat tester · Family Net</title>
+	<title>Chat · Family Net</title>
 </svelte:head>
 
 <div class="page">
 	<div class="toolbar">
-		<h1>Chat tester</h1>
+		<h1>Chat</h1>
 		<div class="toolbar-actions">
 			<div class="toggle-group">
 				<input 
@@ -470,10 +493,10 @@
 					<div class="empty">Send a message to begin. Tool calls will appear inline.<br>Past conversations are saved automatically — use the History button to return to them.</div>
 			{/if}
 
-			{#each turns as turn}
+			{#each turns as turn, ti}
 				{#if turn.role === 'user'}
 					<div class="bubble user">
-						<span class="bubble-text">{turn.text}</span>
+						<div class="user-prose">{@html marked(turn.text)}</div>
 					</div>
 				{:else}
 					<div class="bubble assistant">
@@ -482,13 +505,20 @@
 							title="Copy response as markdown"
 							onclick={() => copyResponseToClipboard(turn.events)}
 						>📋 Copy</button>
-						{#each turn.events as ev}
+						{#each turn.events as ev, ei}
 							{#if ev.kind === 'text'}
 									<div class="text prose">{@html marked(ev.content)}</div>
 							{:else if ev.kind === 'tool'}
+								{@const key = `t${ti}e${ei}`}
 								<div class="tool-card">
-									<div class="tool-name">⚙ {ev.name}</div>
-									<pre class="tool-args">{prettyArgs(ev.args)}</pre>
+									<button class="tool-header" onclick={() => toggleTool(key)}>
+										<span class="tool-icon">⚙</span>
+										<span class="tool-label">{ev.name}{#if toolSummary(ev.args)}<span class="tool-summary">: {toolSummary(ev.args)}</span>{/if}</span>
+										<span class="tool-chevron">{expandedTools.has(key) ? '▾' : '▸'}</span>
+									</button>
+									{#if expandedTools.has(key)}
+										<pre class="tool-args">{prettyArgs(ev.args)}</pre>
+									{/if}
 								</div>
 							{:else if ev.kind === 'error'}
 								<div class="error-msg">⚠ {ev.message}</div>
@@ -504,13 +534,20 @@
 					{#if showThinkCursor}
 						<span class="cursor" aria-label="Thinking"></span>
 					{/if}
-					{#each streamEvents as ev}
+					{#each streamEvents as ev, ei}
 						{#if ev.kind === 'text'}
 							<div class="text prose">{@html marked(ev.content)}</div>
 						{:else if ev.kind === 'tool'}
+							{@const key = `stream-${ei}`}
 							<div class="tool-card">
-								<div class="tool-name">⚙ {ev.name}</div>
-								<pre class="tool-args">{prettyArgs(ev.args)}</pre>
+								<button class="tool-header" onclick={() => toggleTool(key)}>
+									<span class="tool-icon">⚙</span>
+									<span class="tool-label">{ev.name}{#if toolSummary(ev.args)}<span class="tool-summary">: {toolSummary(ev.args)}</span>{/if}</span>
+									<span class="tool-chevron">{expandedTools.has(key) ? '▾' : '▸'}</span>
+								</button>
+								{#if expandedTools.has(key)}
+									<pre class="tool-args">{prettyArgs(ev.args)}</pre>
+								{/if}
 							</div>
 						{:else if ev.kind === 'error'}
 							<div class="error-msg">⚠ {ev.message}</div>
@@ -527,13 +564,20 @@
 							title="Copy response as markdown"
 							onclick={() => copyResponseToClipboard(streamEvents)}
 						>📋 Copy</button>
-						{#each streamEvents as ev}
+						{#each streamEvents as ev, ei}
 							{#if ev.kind === 'text'}
 								<div class="text prose">{@html marked(ev.content)}</div>
 							{:else if ev.kind === 'tool'}
+								{@const key = `overflow-${ei}`}
 								<div class="tool-card">
-									<div class="tool-name">⚙ {ev.name}</div>
-									<pre class="tool-args">{prettyArgs(ev.args)}</pre>
+									<button class="tool-header" onclick={() => toggleTool(key)}>
+										<span class="tool-icon">⚙</span>
+										<span class="tool-label">{ev.name}{#if toolSummary(ev.args)}<span class="tool-summary">: {toolSummary(ev.args)}</span>{/if}</span>
+										<span class="tool-chevron">{expandedTools.has(key) ? '▾' : '▸'}</span>
+									</button>
+									{#if expandedTools.has(key)}
+										<pre class="tool-args">{prettyArgs(ev.args)}</pre>
+									{/if}
 								</div>
 							{:else if ev.kind === 'error'}
 								<div class="error-msg">⚠ {ev.message}</div>
@@ -938,7 +982,18 @@
 	.text :global(blockquote)      { border-left: 3px solid #e5e3de; padding-left: 0.75rem; color: #6b6b80; margin: 0.5em 0; font-style: italic; }
 	.text :global(hr)              { border: none; border-top: 1px solid #e5e3de; margin: 0.75em 0; }
 
-	/* Blinking CSS cursor — no Unicode character so it renders correctly in any font */
+	/* ── User bubble prose ── */
+	.user-prose { display: block; }
+	.user-prose :global(p)             { margin: 0.2em 0; line-height: 1.6; }
+	.user-prose :global(p:first-child) { margin-top: 0; }
+	.user-prose :global(p:last-child)  { margin-bottom: 0; }
+	.user-prose :global(code)          { background: rgba(255,255,255,0.2); color: #fff; border-radius: 4px; padding: 0.1em 0.35em; font-size: 0.82em; font-family: 'ui-monospace', monospace; }
+	.user-prose :global(pre)           { background: rgba(0,0,0,0.25); border-radius: 6px; padding: 0.6rem 0.8rem; overflow-x: auto; margin: 0.4em 0; }
+	.user-prose :global(pre code)      { background: none; color: #e2e8f0; padding: 0; font-size: 0.8em; }
+	.user-prose :global(strong)        { font-weight: 700; }
+	.user-prose :global(em)            { font-style: italic; }
+	.user-prose :global(ul), .user-prose :global(ol) { padding-left: 1.4em; margin: 0.3em 0; }
+	.user-prose :global(li)            { margin: 0.1em 0; }
 	.cursor {
 		display: inline-block;
 		width: 2px;
@@ -960,14 +1015,48 @@
 		overflow: hidden;
 		background: #f7f6f3;
 	}
-	.tool-name {
+	.tool-header {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		width: 100%;
+		background: #f0eff9;
+		border: none;
+		border-bottom: none;
+		padding: 0.3rem 0.6rem;
+		cursor: pointer;
+		text-align: left;
+		font-family: inherit;
+	}
+	.tool-header[aria-expanded="true"],
+	.tool-card:has(.tool-args) .tool-header {
+		border-bottom: 1px solid #e5e3de;
+	}
+	.tool-card:has(.tool-args) .tool-header { border-bottom: 1px solid #e5e3de; }
+	.tool-icon {
+		font-size: 0.78rem;
+		color: #4f46e5;
+		flex-shrink: 0;
+	}
+	.tool-label {
 		font-size: 0.78rem;
 		font-weight: 600;
 		color: #4f46e5;
-		padding: 0.3rem 0.6rem;
-		background: #f0eff9;
-		border-bottom: 1px solid #e5e3de;
+		flex: 1;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 	}
+	.tool-summary {
+		font-weight: 400;
+		color: #6b6b80;
+	}
+	.tool-chevron {
+		font-size: 0.7rem;
+		color: #9b9baa;
+		flex-shrink: 0;
+	}
+	.tool-header:hover { background: #e9e8f7; }
 	.tool-args {
 		margin: 0;
 		padding: 0.45rem 0.6rem;
@@ -975,7 +1064,7 @@
 		color: #3d3d4d;
 		white-space: pre-wrap;
 		word-break: break-all;
-		max-height: 140px;
+		max-height: 240px;
 		overflow-y: auto;
 		font-family: 'ui-monospace', 'Cascadia Code', monospace;
 	}
