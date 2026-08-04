@@ -7,6 +7,8 @@
 
 	const user = $derived(data.user);
 	const isAuth = $derived(!!user);
+
+	let navExpanded = $state(false);
 </script>
 
 <svelte:head>
@@ -16,40 +18,56 @@
 {#if isAuth}
 	<div class="shell">
 		<nav class="sidebar">
-			<div class="sidebar-top">
+			<div class="logo-row">
 				<a href="/" class="logo">
 					<span class="logo-mark">FN</span>
 					<span class="logo-text">Family Net</span>
 				</a>
-
-				<div class="nav-section">
-					<span class="nav-label">Notebook</span>
-					<a href="/" class="nav-link">All entries</a>
-				</div>
-
-				<div class="nav-section">
-					<span class="nav-label">Agents</span>
-					{#if dev}
-						<a href="/dev/chat" class="nav-link">Chat</a>
-					{/if}
-				</div>
-
-				<div class="nav-section">
-					<span class="nav-label">API</span>
-					<a href="/api/tools?format=openapi" target="_blank" class="nav-link ext">OpenAPI schema</a>
-					<a href="/api/tools?format=openai" target="_blank" class="nav-link ext">OpenAI tools</a>
-					<a href="/api/tools?format=anthropic" target="_blank" class="nav-link ext">Anthropic tools</a>
-				</div>
+				<button
+					class="nav-toggle"
+					aria-label={navExpanded ? 'Collapse navigation' : 'Expand navigation'}
+					aria-expanded={navExpanded}
+					onclick={() => navExpanded = !navExpanded}
+				>
+					<span class="hamburger" class:open={navExpanded}>
+						<span></span>
+						<span></span>
+						<span></span>
+					</span>
+				</button>
 			</div>
 
-			<div class="sidebar-bottom">
-				<div class="user-info">
-					<span class="user-name">{user?.name}</span>
-					<span class="user-role">{user?.role}</span>
+			<div class="nav-collapsible" class:expanded={navExpanded}>
+				<div class="sidebar-top">
+					<div class="nav-section">
+						<span class="nav-label">Notebook</span>
+						<a href="/" class="nav-link">All entries</a>
+					</div>
+
+					<div class="nav-section">
+						<span class="nav-label">Agents</span>
+						{#if dev}
+							<a href="/dev/chat" class="nav-link">Chat</a>
+						{/if}
+					</div>
+
+					<div class="nav-section">
+						<span class="nav-label">API</span>
+						<a href="/api/tools?format=openapi" target="_blank" class="nav-link ext">OpenAPI schema</a>
+						<a href="/api/tools?format=openai" target="_blank" class="nav-link ext">OpenAI tools</a>
+						<a href="/api/tools?format=anthropic" target="_blank" class="nav-link ext">Anthropic tools</a>
+					</div>
 				</div>
-				<form method="post" action="/logout">
-					<button type="submit" class="logout-btn">Sign out</button>
-				</form>
+
+				<div class="sidebar-bottom">
+					<div class="user-info">
+						<span class="user-name">{user?.name}</span>
+						<span class="user-role">{user?.role}</span>
+					</div>
+					<form method="post" action="/logout">
+						<button type="submit" class="logout-btn">Sign out</button>
+					</form>
+				</div>
 			</div>
 		</nav>
 
@@ -96,10 +114,18 @@
 	:global(.prose tbody tr:nth-child(even) td) { background: #fafaf8; }
 	.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100dvh; }
 	.sidebar { position: sticky; top: 0; height: 100dvh; overflow-y: auto; background: #f0efe9; border-right: 1px solid #e5e3de; display: flex; flex-direction: column; padding: 1.25rem 0; }
+	.logo-row { display: flex; align-items: center; padding: 0.75rem 1rem; margin-bottom: 1rem; }
 	.sidebar-top { flex: 1; padding: 0 1rem; }
-	.logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; margin-bottom: 1.75rem; }
+	.logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; flex: 1; }
 	.logo-mark { display: grid; place-items: center; width: 32px; height: 32px; background: #1a1a2e; color: #fff; border-radius: 7px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; }
 	.logo-text { font-weight: 700; font-size: 0.95rem; color: #1a1a2e; }
+	.nav-toggle { display: none; background: none; border: none; padding: 0.25rem; cursor: pointer; color: #6b6b80; border-radius: 5px; line-height: 0; }
+	.nav-toggle:hover { background: #e5e3de; color: #1a1a2e; }
+	.hamburger { display: flex; flex-direction: column; justify-content: space-between; width: 18px; height: 14px; }
+	.hamburger span { display: block; height: 2px; width: 100%; background: currentColor; border-radius: 2px; transition: transform 0.2s ease, opacity 0.2s ease; transform-origin: center; }
+	.hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+	.hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+	.hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 	.nav-section { margin-bottom: 1.5rem; }
 	.nav-label { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #9b9baa; padding: 0 0.25rem; margin-bottom: 0.35rem; }
 	.nav-link { display: block; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.85rem; color: #3d3d4d; text-decoration: none; transition: background 0.12s; margin-bottom: 0.1rem; }
@@ -113,8 +139,13 @@
 	.logout-btn:hover { border-color: #1a1a2e; color: #1a1a2e; }
 	.content { padding: 2.5rem 3rem; max-width: 900px; width: 100%; }
 	@media (max-width: 680px) {
-		.shell { grid-template-columns: 1fr; }
-		.sidebar { position: static; height: auto; }
-		.content { padding: 1.5rem 1.25rem; }
+		.shell { grid-template-columns: 1fr; display: flex; flex-direction: column; height: 100dvh; }
+		.sidebar { position: static; height: auto; padding: 0; }
+		.logo-row { margin-bottom: 0; }
+		.nav-toggle { display: flex; }
+		.nav-collapsible { overflow: hidden; max-height: 0; }
+		.nav-collapsible.expanded { max-height: none; padding-bottom: 0.75rem; }
+		.sidebar-top { padding-top: 0; }
+		.content { flex: 1; min-height: 0; overflow-y: auto; padding: 1.5rem 1.25rem; }
 	}
 </style>

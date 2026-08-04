@@ -622,6 +622,9 @@
 		height: calc(100dvh - 5rem);
 		gap: 0.75rem;
 	}
+	@media (max-width: 680px) {
+		.page { height: 100%; }
+	}
 
 	/* ── Modal ── */
 	.modal-overlay {
@@ -1114,7 +1117,7 @@
 	.input-bar {
 		display: flex;
 		gap: 0.5rem;
-		align-items: flex-end;
+		align-items: stretch;
 		flex-shrink: 0;
 	}
 	textarea {
@@ -1138,7 +1141,6 @@
 		border: none;
 		border-radius: 10px;
 		padding: 0 1.25rem;
-		height: 52px;
 		font-size: 0.88rem;
 		font-weight: 600;
 		cursor: pointer;
