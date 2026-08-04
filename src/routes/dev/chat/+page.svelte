@@ -40,17 +40,16 @@
 		`After receiving a tool result, use the data to answer the user directly. ` +
 		`Do not call the same tool more than once unless the result was an error.` +
 		(devToolsEnabled
-			? `\n\nBEFORE answering ANY question about code architecture or file locations:\n` +
-			  `1. FIRST use read_file to read ARCHITECTURE.md from the project root\n` +
-			  `2. Review the structure and key file locations\n` +
-			  `3. THEN answer the user's question based on the actual project layout\n\n` +
-			  `When asked to modify code:\n` +
-			  `1. Read ARCHITECTURE.md to understand the project structure\n` +
-			  `2. Use read_file to get the current file content\n` +
-			  `3. Make ONLY the specific changes the user requested\n` +
-			  `4. Use write_file with the complete modified file\n` +
-			  `5. Stop. Do not call tools again unless the user asks.\n\n` +
-			  `Available tools: read_file, write_file, run_command, search_files, list_dir`
+			? `\n\nFor code modifications, complete ALL of these steps in order:\n` +
+			  `Step 1: Call read_file on ARCHITECTURE.md\n` +
+			  `Step 2: Call patch_file with the exact old text to remove/change and the new text\n` +
+			  `The task is NOT complete until patch_file has been called successfully.\n\n` +
+			  `Rules:\n` +
+			  `- Prefer patch_file over write_file — it only requires the changed text, not the whole file\n` +
+			  `- NEVER write to ARCHITECTURE.md\n` +
+			  `- Do not describe or show code — just execute the steps\n` +
+			  `- Do not repeat a failed tool call with the same arguments\n\n` +
+			  `Tools: read_file, write_file, patch_file, run_command, search_files, list_dir`
 			: '');
 
 
@@ -64,7 +63,7 @@
 	let input        = $state('');
 	let busy         = $state(false);
 	let showRaw      = $state(false);
-	let showSystem   = $state(true);
+	let showSystem   = $state(false);
 	let systemPrompt = $state(DEFAULT_SYSTEM_PROMPT);
 	let rawLog       = $state<string[]>([]);
 	let showHistory  = $state(false);

@@ -161,7 +161,7 @@ export const DEV_TOOLS: ToolDefinition[] = [
 		description:
 			'Write text content to a file on the server, creating it if it does not exist. ' +
 			'Paths are relative to the project root or absolute. ' +
-			'Existing files are overwritten.',
+			'Existing files are overwritten. Use patch_file instead when making small targeted changes.',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -169,6 +169,24 @@ export const DEV_TOOLS: ToolDefinition[] = [
 				content: { type: 'string', description: 'Full text content to write to the file.' },
 			},
 			required: ['path', 'content'],
+		},
+	},
+	{
+		name: 'patch_file',
+		description:
+			'Make a targeted find-and-replace edit to a file without rewriting the whole thing. ' +
+			'Provide the exact text to find (old or old_text) and the text to replace it with (new or new_text). ' +
+			'Prefer this over write_file for targeted changes — it uses far fewer tokens.',
+		parameters: {
+			type: 'object',
+			properties: {
+				path:     { type: 'string', description: 'File path to patch (relative to project root).' },
+				old:      { type: 'string', description: 'The exact text to find in the file (also accepted as old_text).' },
+				old_text: { type: 'string', description: 'Alias for old.' },
+				new:      { type: 'string', description: 'The text to replace it with. Use empty string to delete. Also accepted as new_text.' },
+				new_text: { type: 'string', description: 'Alias for new.' },
+			},
+			required: ['path'],
 		},
 	},
 	{

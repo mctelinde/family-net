@@ -41,8 +41,8 @@ const sseHeaders = {
 const encode = (chunk: ChatChunk): string => `data: ${JSON.stringify(chunk)}\n\n`;
 const done = (): string => `data: [DONE]\n\n`;
 
-const MAX_TOOL_ITERATIONS = 15;
-const STREAM_TIMEOUT_MS = 55_000; // sits under Vercel's 60s ceiling
+const MAX_TOOL_ITERATIONS = 20;
+const STREAM_TIMEOUT_MS = 300_000; // 5 minutes — no Vercel ceiling, local Ollama can be slow
 
 /** Tool dispatch table — calls storage under the agent identity. */
 const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {
@@ -231,6 +231,36 @@ const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknow
 			await fs.mkdir(path.dirname(resolved), { recursive: true });
 			await fs.writeFile(resolved, content, 'utf-8');
 			return { path: resolved, written: content.length };
+		} catch (e: unknown) {
+			return { error: String(e) };
+		}
+	},
+
+	patch_file: async (args) => {
+		const root     = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
+		const raw      = ((typeof args.path === 'string' ? args.path : '') ||
+		                  (typeof args.file_path === 'string' ? args.file_path : '')).replace(/^[/\\]+/, '');
+		// Accept old/new or old_text/new_text
+		const oldStr   = (typeof args.old === 'string' ? args.old : '') ||
+		                 (typeof args.old_text === 'string' ? args.old_text : '');
+		const newStr   = (typeof args.new === 'string' ? args.new : '') ||
+		                 (typeof args.new_text === 'string' ? args.new_text : '');
+		if (!raw)    return { error: 'path is required' };
+		if (!oldStr) return { error: 'old (or old_text) is required — the exact text to replace' };
+		const resolved = path.resolve(root, raw);
+		if (!resolved.startsWith(root)) return { error: 'path traversal not allowed' };
+		try {
+			const original = await fs.readFile(resolved, 'utf-8');
+			// Normalize to LF for matching, preserve original line endings when writing back
+			const hasCRLF  = original.includes('\r\n');
+			const normalized = original.replace(/\r\n/g, '\n');
+			const oldNorm    = oldStr.replace(/\r\n/g, '\n');
+			const newNorm    = newStr.replace(/\r\n/g, '\n');
+			if (!normalized.includes(oldNorm)) return { error: 'old text not found in file — check for exact whitespace and quotes' };
+			let patched = normalized.replace(oldNorm, newNorm);
+			if (hasCRLF) patched = patched.replace(/\n/g, '\r\n');
+			await fs.writeFile(resolved, patched, 'utf-8');
+			return { path: raw, replaced: true };
 		} catch (e: unknown) {
 			return { error: String(e) };
 		}

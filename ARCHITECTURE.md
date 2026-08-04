@@ -41,7 +41,8 @@ The sidebar has 3 sections defined as hardcoded HTML:
 
 ### Available Tools (when ENABLE_DEV_TOOLS=true)
 - `read_file` - Read file contents (accepts `path` or `file_path`)
-- `write_file` - Write or create files (requires `path` and `content`)
+- `patch_file` - **Preferred for edits** — find-and-replace a specific string in a file (`path`, `old`, `new`). Use this instead of write_file for targeted changes.
+- `write_file` - Write or create files (requires `path` and `content`). Only use for new files or complete rewrites.
 - `list_dir` - List directory contents (accepts `path`, `directory`, or `dir_path`)
 - `search_files` - Search using git grep (accepts `pattern`, `glob`, `case_sensitive`)
 - `run_command` - Execute allowed commands (git, npm, npx, node, tsc, prettier, eslint)
