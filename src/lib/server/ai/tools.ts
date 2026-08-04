@@ -174,17 +174,21 @@ export const DEV_TOOLS: ToolDefinition[] = [
 	{
 		name: 'patch_file',
 		description:
-			'Make a targeted find-and-replace edit to a file without rewriting the whole thing. ' +
-			'Provide the exact text to find (old or old_text) and the text to replace it with (new or new_text). ' +
-			'Prefer this over write_file for targeted changes — it uses far fewer tokens.',
+			'Make a targeted edit to a file. Two modes:\n' +
+			'1. LINE MODE (preferred): provide line_number and patch_content (prefix with "-" to delete the line) or new_line to replace it.\n' +
+			'2. FIND-REPLACE mode: provide old (exact text to find) and new (replacement text).\n' +
+			'Always prefer line mode — it avoids whitespace matching issues.',
 		parameters: {
 			type: 'object',
 			properties: {
-				path:     { type: 'string', description: 'File path to patch (relative to project root).' },
-				old:      { type: 'string', description: 'The exact text to find in the file (also accepted as old_text).' },
-				old_text: { type: 'string', description: 'Alias for old.' },
-				new:      { type: 'string', description: 'The text to replace it with. Use empty string to delete. Also accepted as new_text.' },
-				new_text: { type: 'string', description: 'Alias for new.' },
+				path:          { type: 'string',  description: 'File path to patch (relative to project root). Also accepted as file_path.' },
+				line_number:   { type: 'number',  description: 'Line number to edit (1-based). Use with patch_content or new_line.' },
+				patch_content: { type: 'string',  description: 'In line mode: content for the line. Prefix with "-" to delete the line.' },
+				new_line:      { type: 'string',  description: 'In line mode: replacement text for the line.' },
+				old:           { type: 'string',  description: 'In find-replace mode: exact text to find. Also accepted as old_text.' },
+				old_text:      { type: 'string',  description: 'Alias for old.' },
+				new:           { type: 'string',  description: 'In find-replace mode: replacement text. Use empty string to delete. Also accepted as new_text.' },
+				new_text:      { type: 'string',  description: 'Alias for new.' },
 			},
 			required: ['path'],
 		},

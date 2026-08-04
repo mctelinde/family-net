@@ -240,27 +240,62 @@ const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknow
 		const root     = path.resolve(env.DEV_TOOLS_ROOT || process.cwd());
 		const raw      = ((typeof args.path === 'string' ? args.path : '') ||
 		                  (typeof args.file_path === 'string' ? args.file_path : '')).replace(/^[/\\]+/, '');
-		// Accept old/new or old_text/new_text
-		const oldStr   = (typeof args.old === 'string' ? args.old : '') ||
-		                 (typeof args.old_text === 'string' ? args.old_text : '');
-		const newStr   = (typeof args.new === 'string' ? args.new : '') ||
-		                 (typeof args.new_text === 'string' ? args.new_text : '');
-		if (!raw)    return { error: 'path is required' };
-		if (!oldStr) return { error: 'old (or old_text) is required — the exact text to replace' };
+		if (!raw) return { error: 'path is required' };
 		const resolved = path.resolve(root, raw);
 		if (!resolved.startsWith(root)) return { error: 'path traversal not allowed' };
+
 		try {
 			const original = await fs.readFile(resolved, 'utf-8');
-			// Normalize to LF for matching, preserve original line endings when writing back
 			const hasCRLF  = original.includes('\r\n');
+			const lines    = original.replace(/\r\n/g, '\n').split('\n');
+
+			// ── Mode 1: line-number based patch ─────────────────────────────
+			const lineNum = typeof args.line_number === 'number' ? args.line_number : null;
+			if (lineNum !== null) {
+				const idx = lineNum - 1; // convert to 0-based
+				if (idx < 0 || idx >= lines.length) return { error: `line_number ${lineNum} is out of range (file has ${lines.length} lines)` };
+
+				// patch_content starting with '-' means delete the line
+				const patchContent = typeof args.patch_content === 'string' ? args.patch_content : null;
+				const newLine      = typeof args.new_line      === 'string' ? args.new_line      : null;
+				const expectedLine = patchContent ? patchContent.replace(/^-\s?/, '').trim() : null;
+
+				// Safety check: verify the line content matches what the model expects before mutating
+				if (expectedLine && !lines[idx].trim().includes(expectedLine.trim())) {
+					return { error: `Safety check failed: line ${lineNum} contains "${lines[idx].trim()}" but expected content matching "${expectedLine}". Double-check the line number.` };
+				}
+
+				if (patchContent !== null && patchContent.startsWith('-')) {
+					lines.splice(idx, 1); // delete the line
+				} else if (newLine !== null) {
+					lines[idx] = newLine;
+				} else if (patchContent !== null) {
+					lines[idx] = patchContent.replace(/^[+-]\s?/, ''); // strip diff prefix if present
+				} else {
+					return { error: 'provide patch_content or new_line when using line_number' };
+				}
+
+				let patched = lines.join('\n');
+				if (hasCRLF) patched = patched.replace(/\n/g, '\r\n');
+				await fs.writeFile(resolved, patched, 'utf-8');
+				return { path: raw, replaced: true, mode: 'line', line: lineNum };
+			}
+
+			// ── Mode 2: find-and-replace ─────────────────────────────────────
+			const oldStr = (typeof args.old === 'string' ? args.old : '') ||
+			               (typeof args.old_text === 'string' ? args.old_text : '');
+			const newStr = (typeof args.new === 'string' ? args.new : '') ||
+			               (typeof args.new_text === 'string' ? args.new_text : '');
+			if (!oldStr) return { error: 'provide old (or old_text) for find-and-replace, or line_number for line-based patching' };
+
 			const normalized = original.replace(/\r\n/g, '\n');
 			const oldNorm    = oldStr.replace(/\r\n/g, '\n');
 			const newNorm    = newStr.replace(/\r\n/g, '\n');
-			if (!normalized.includes(oldNorm)) return { error: 'old text not found in file — check for exact whitespace and quotes' };
+			if (!normalized.includes(oldNorm)) return { error: 'old text not found in file — try using line_number instead' };
 			let patched = normalized.replace(oldNorm, newNorm);
 			if (hasCRLF) patched = patched.replace(/\n/g, '\r\n');
 			await fs.writeFile(resolved, patched, 'utf-8');
-			return { path: raw, replaced: true };
+			return { path: raw, replaced: true, mode: 'find-replace' };
 		} catch (e: unknown) {
 			return { error: String(e) };
 		}

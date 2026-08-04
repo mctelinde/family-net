@@ -40,15 +40,17 @@
 		`After receiving a tool result, use the data to answer the user directly. ` +
 		`Do not call the same tool more than once unless the result was an error.` +
 		(devToolsEnabled
-			? `\n\nFor code modifications, complete ALL of these steps in order:\n` +
+			? `\n\nFor code modifications, follow this sequence:\n` +
 			  `Step 1: Call read_file on ARCHITECTURE.md\n` +
-			  `Step 2: Call patch_file with the exact old text to remove/change and the new text\n` +
-			  `The task is NOT complete until patch_file has been called successfully.\n\n` +
+			  `Step 2: Call read_file on the file that needs to change\n` +
+			  `Step 3: Check whether the requested change is already present in the file.\n` +
+			  `  - If the change is already done, tell the user and STOP. Do not call any more tools.\n` +
+			  `  - If the change is NOT done, call patch_file using line_number mode: specify the line_number and use patch_content starting with "-" to delete a line.\n\n` +
 			  `Rules:\n` +
-			  `- Prefer patch_file over write_file — it only requires the changed text, not the whole file\n` +
 			  `- NEVER write to ARCHITECTURE.md\n` +
 			  `- Do not describe or show code — just execute the steps\n` +
-			  `- Do not repeat a failed tool call with the same arguments\n\n` +
+			  `- Do not repeat a failed tool call with the same arguments\n` +
+			  `- Prefer patch_file line_number mode over find-replace or write_file\n\n` +
 			  `Tools: read_file, write_file, patch_file, run_command, search_files, list_dir`
 			: '');
 
