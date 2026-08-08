@@ -49,7 +49,7 @@
 
 					<div class="nav-section">
 						<span class="nav-label">Agents</span>
-						{#if dev}
+							{#if dev || user?.role === 'admin'}
 							<a href="/dev/chat" class="nav-link">Chat</a>
 						{/if}
 					</div>
