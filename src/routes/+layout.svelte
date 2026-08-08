@@ -74,6 +74,10 @@
 			</div>
 		</nav>
 
+		{#if navExpanded}
+			<div class="nav-backdrop" onclick={() => navExpanded = false} aria-hidden="true"></div>
+		{/if}
+
 		<main class="content">
 			{@render children()}
 		</main>
@@ -150,5 +154,7 @@
 		.nav-collapsible.expanded { max-height: none; padding-bottom: 0.75rem; }
 		.sidebar-top { padding-top: 0; }
 		.content { flex: 1; min-height: 0; overflow-y: auto; padding: 1.5rem 1.25rem; }
+		.nav-backdrop { position: fixed; inset: 0; z-index: 1; background: transparent; }
+		.sidebar { position: relative; z-index: 2; }
 	}
 </style>
