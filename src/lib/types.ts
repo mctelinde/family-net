@@ -1,4 +1,4 @@
-export type WidgetType = 'note' | 'business-plan' | 'fitness-goals' | 'finance-tracker';
+export type WidgetType = 'note' | 'business-plan' | 'fitness-goals' | 'finance-tracker' | 'todo-list';
 export type Visibility = 'private' | 'family';
 export type UserRole = 'admin' | 'member';
 

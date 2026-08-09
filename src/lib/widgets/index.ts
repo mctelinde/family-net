@@ -4,9 +4,10 @@ import Note from './Note.svelte';
 import BusinessPlan from './BusinessPlan.svelte';
 import FitnessGoals from './FitnessGoals.svelte';
 import FinanceTracker from './FinanceTracker.svelte';
+import TodoList from './TodoList.svelte';
 import type { WidgetType } from '$lib/types';
 
-export { Note, BusinessPlan, FitnessGoals, FinanceTracker };
+export { Note, BusinessPlan, FitnessGoals, FinanceTracker, TodoList };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const registry: Record<WidgetType, Component<any>> = {
@@ -14,6 +15,7 @@ const registry: Record<WidgetType, Component<any>> = {
 	'business-plan': BusinessPlan,
 	'fitness-goals': FitnessGoals,
 	'finance-tracker': FinanceTracker,
+	'todo-list': TodoList,
 };
 
 export function getWidget(type: string): Component<{ entry: NotebookEntry }> {
