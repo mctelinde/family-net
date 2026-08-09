@@ -155,6 +155,6 @@
 		.nav-collapsible.expanded { max-height: none; padding-bottom: 0.75rem; }
 		.sidebar-top { padding-top: 0; }
 		.content { flex: 1; overflow-y: visible; padding: 1.5rem 1.25rem; display: flex; flex-direction: column; }
-		.content.chat-content { height: auto; min-height: 0; overflow: hidden; }
+		.content.chat-content { height: auto; min-height: 0; overflow: hidden; padding-top: 0; }
 	}
 </style>

@@ -673,6 +673,7 @@
 		}
 		.toolbar { 
 			flex-shrink: 0; 
+			min-height: 3rem;
 		}
 		.history-panel {
 			flex-shrink: 0;
