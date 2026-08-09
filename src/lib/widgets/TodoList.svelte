@@ -505,7 +505,6 @@
 		flex-shrink: 0;
 	}
 
-	.reset-btn,
 	.delete-btn {
 		background: none;
 		border: none;
@@ -519,23 +518,8 @@
 		transition: color 0.12s;
 	}
 
-	.reset-btn:hover,
 	.delete-btn:hover {
 		color: #ef4444;
-	}
-
-	.reset-btn {
-		display: flex;
-		align-items: center;
-		gap: 0.3rem;
-		padding: 0.25rem 0.5rem;
-		color: #0ea5e9;
-		font-size: 0.75rem;
-		font-weight: 600;
-	}
-
-	.reset-btn:hover {
-		color: #0284c7;
 	}
 
 	.empty-state {
