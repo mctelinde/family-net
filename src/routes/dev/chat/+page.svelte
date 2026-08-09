@@ -650,6 +650,7 @@
 			gap: 0.5rem; 
 			padding: 0.5rem; 
 			box-sizing: border-box;
+			overflow: hidden;
 		}
 		.toolbar { 
 			flex-shrink: 0; 
