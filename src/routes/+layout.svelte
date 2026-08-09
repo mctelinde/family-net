@@ -44,13 +44,13 @@
 				<div class="sidebar-top">
 					<div class="nav-section">
 						<span class="nav-label">Notebook</span>
-						<a href="/" class="nav-link">All entries</a>
+						<a href="/" class="nav-link" onclick={() => navExpanded = false}>All entries</a>
 					</div>
 
 					<div class="nav-section">
 						<span class="nav-label">Agents</span>
 							{#if dev || user?.role === 'admin'}
-							<a href="/dev/chat" class="nav-link">Chat</a>
+							<a href="/dev/chat" class="nav-link" onclick={() => navExpanded = false}>Chat</a>
 						{/if}
 					</div>
 
