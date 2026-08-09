@@ -639,7 +639,7 @@
 		gap: 0.75rem;
 	}
 	@media (max-width: 680px) {
-		.page { display: flex; flex-direction: column; height: auto; min-height: calc(100dvh - 56px); gap: 0.5rem; }
+		.page { display: flex; flex-direction: column; height: auto; min-height: calc(100dvh - 104px); gap: 0.5rem; }
 		.body { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 		.thread { flex: 1; overflow-y: visible; max-height: none; }
 	}
