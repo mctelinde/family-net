@@ -673,12 +673,10 @@
 			flex: 1; 
 			overflow-y: auto; 
 			max-height: none; 
-			padding: 0.25rem 0.25rem 4.5rem; 
+			padding: 0.25rem 0.25rem 0.5rem; 
 		}
 		.input-bar { 
 			flex-shrink: 0;
-			position: sticky;
-			bottom: 0.5rem;
 		}
 	}
 
