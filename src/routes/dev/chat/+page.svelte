@@ -104,11 +104,12 @@
 	$effect(() => {
 		try {
 			const raw = localStorage.getItem(STORAGE_KEY);
-			savedConversations = raw ? (JSON.parse(raw) as SavedConversation[]) : [];
+			const loaded = raw ? (JSON.parse(raw) as SavedConversation[]) : [];
+			savedConversations = loaded;
 			// Auto-load the latest conversation only once on initial page load
-			if (!hasAutoLoadedOnMount && savedConversations.length > 0 && turns.length === 0) {
+			if (!hasAutoLoadedOnMount && loaded.length > 0 && turns.length === 0) {
 				hasAutoLoadedOnMount = true;
-				const latest = savedConversations[0];
+				const latest = loaded[0];
 				loadConversation(latest.id);
 			}
 		} catch {
