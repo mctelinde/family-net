@@ -677,7 +677,7 @@
 		.input-bar { 
 			flex-shrink: 0;
 			position: sticky;
-			bottom: 0;
+			bottom: 0.5rem;
 		}
 	}
 
