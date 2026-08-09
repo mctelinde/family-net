@@ -647,8 +647,9 @@
 	@media (max-width: 680px) {
 		.page { height: 100dvh; gap: 0.5rem; padding: 0.5rem; box-sizing: border-box; }
 		.toolbar { flex-shrink: 0; }
-		.body { flex: 1; overflow-y: auto; min-height: 0; }
-		.thread { overflow-y: auto; max-height: none; }
+		.body { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+		.body.with-raw { grid-template-columns: unset; }
+		.thread { flex: 1; overflow-y: auto; max-height: none; padding: 0.25rem 0.25rem 0.5rem; }
 		.input-bar { flex-shrink: 0; margin-top: 0.5rem; }
 	}
 
