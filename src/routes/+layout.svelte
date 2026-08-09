@@ -143,7 +143,7 @@
 	.content { padding: 2.5rem 3rem; max-width: 900px; width: 100%; }
 	@media (max-width: 680px) {
 		.shell { grid-template-columns: 1fr; display: block; min-height: 100dvh; }
-		.sidebar { position: static; height: auto; padding: 0; }
+		.sidebar { position: sticky; top: 0; height: auto; padding: 0; z-index: 100; border-right: none; border-bottom: 1px solid #e5e3de; }
 		.logo-row { margin-bottom: 0; }
 		.nav-toggle { display: flex; }
 		.nav-collapsible { overflow: hidden; max-height: 0; }
