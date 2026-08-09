@@ -639,9 +639,10 @@
 		gap: 0.75rem;
 	}
 	@media (max-width: 680px) {
-		.page { display: flex; flex-direction: column; height: auto; min-height: calc(100dvh - 104px); gap: 0.5rem; }
-		.body { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-		.thread { flex: 1; overflow-y: visible; max-height: none; }
+		.page { display: block; height: auto; gap: 0.5rem; }
+		.body { display: block; }
+		.thread { overflow-y: visible; max-height: none; }
+		textarea { font-size: 1rem; }
 	}
 
 	/* ── Modal ── */
