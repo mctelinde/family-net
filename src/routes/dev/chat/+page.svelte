@@ -675,6 +675,10 @@
 			max-height: none; 
 			padding: 0.25rem 0.25rem 0.5rem; 
 		}
+		.empty {
+			margin: 0;
+			padding: 0.5rem;
+		}
 		.input-bar { 
 			flex-shrink: 0;
 		}
