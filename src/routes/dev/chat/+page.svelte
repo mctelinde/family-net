@@ -646,9 +646,9 @@
 	}
 	@media (max-width: 680px) {
 		.page { 
-			height: 100dvh; 
+			height: calc(100dvh - 1.5rem - 1.5rem); 
 			gap: 0; 
-			padding: 0.5rem; 
+			padding: 0; 
 			box-sizing: border-box;
 			overflow: hidden;
 		}
