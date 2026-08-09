@@ -3,11 +3,13 @@
 	import favicon from "$lib/assets/favicon.svg";
 	import { dev } from '$app/environment';
 	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/state';
 
 	let { children, data }: { children: import("svelte").Snippet; data: LayoutData } = $props();
 
 	const user = $derived(data.user);
 	const isAuth = $derived(!!user);
+	const isChat = $derived(page.url.pathname === '/dev/chat');
 
 	let navExpanded = $state(false);
 
@@ -19,7 +21,7 @@
 </svelte:head>
 
 {#if isAuth}
-	<div class="shell">
+	<div class="shell" class:chat-shell={isChat}>
 		<nav class="sidebar">
 			<div class="logo-row">
 				<a href="/" class="logo">
@@ -74,7 +76,7 @@
 			</div>
 		</nav>
 
-		<main class="content">
+		<main class="content" class:chat-content={isChat}>
 			{@render children()}
 		</main>
 	</div>
@@ -116,6 +118,7 @@
 	:global(.prose tbody td) { border: 1px solid #e5e3de; padding: 0.5rem 0.75rem; color: #3d3d4d; }
 	:global(.prose tbody tr:nth-child(even) td) { background: #fafaf8; }
 	.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100dvh; }
+	.shell.chat-shell { height: 100dvh; min-height: 0; overflow: hidden; }
 	.sidebar { position: sticky; top: 0; height: 100dvh; overflow-y: auto; background: #f0efe9; border-right: 1px solid #e5e3de; display: flex; flex-direction: column; padding: 1.25rem 0; }
 	.logo-row { display: flex; align-items: center; padding: 0.75rem 1rem; margin-bottom: 1rem; }
 	.sidebar-top { flex: 1; padding: 0 1rem; }
@@ -141,8 +144,10 @@
 	.logout-btn { background: none; border: 1px solid #d4d2cc; border-radius: 6px; padding: 0.35rem 0.75rem; font-size: 0.8rem; color: #6b6b80; cursor: pointer; transition: border-color 0.12s, color 0.12s; width: 100%; }
 	.logout-btn:hover { border-color: #1a1a2e; color: #1a1a2e; }
 	.content { padding: 2.5rem 3rem; max-width: 900px; width: 100%; }
+	.content.chat-content { height: 100dvh; overflow: hidden; }
 	@media (max-width: 680px) {
 		.shell { grid-template-columns: 1fr; display: flex; flex-direction: column; min-height: 100dvh; }
+		.shell.chat-shell { height: 100dvh; min-height: 0; }
 		.sidebar { position: sticky; top: 0; height: auto; padding: 0; z-index: 100; border-right: none; border-bottom: 1px solid #e5e3de; }
 		.logo-row { margin-bottom: 0; }
 		.nav-toggle { display: flex; }
@@ -150,5 +155,6 @@
 		.nav-collapsible.expanded { max-height: none; padding-bottom: 0.75rem; }
 		.sidebar-top { padding-top: 0; }
 		.content { flex: 1; overflow-y: visible; padding: 1.5rem 1.25rem; display: flex; flex-direction: column; }
+		.content.chat-content { height: auto; min-height: 0; overflow: hidden; }
 	}
 </style>

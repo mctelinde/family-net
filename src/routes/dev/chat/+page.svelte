@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { marked } from 'marked';
+	import { tick } from 'svelte';
 	import type { PageData } from './$types';
 	import { Settings, SquarePen, Clock } from 'lucide-svelte';
 
@@ -94,16 +95,21 @@
 	let hasAutoLoadedOnMount = $state(false);
 
 	let threadEl = $state<HTMLElement | undefined>(undefined);
+	let inputEl = $state<HTMLTextAreaElement | undefined>(undefined);
+
+	async function scrollThreadToBottom(behavior: ScrollBehavior = 'auto') {
+		await tick();
+		threadEl?.scrollTo({ top: threadEl.scrollHeight, behavior });
+	}
+
+	async function focusInput() {
+		await tick();
+		inputEl?.focus({ preventScroll: true });
+	}
 
 	// Derived cursor visibility
 	const showThinkCursor = $derived(busy && streamEvents.length === 0);
 	const showTextCursor  = $derived(busy && streamEvents.at(-1)?.kind === 'text');
-
-	// Auto-scroll thread on new content
-	$effect(() => {
-		void turns; void streamEvents;
-		setTimeout(() => threadEl?.scrollTo({ top: threadEl.scrollHeight, behavior: 'smooth' }), 0);
-	});
 
 	// Load saved conversations from localStorage on mount
 	$effect(() => {
@@ -169,6 +175,7 @@
 		busy                 = false;
 		activeConversationId = conv.id;
 		showHistory          = false;
+		void scrollThreadToBottom();
 	}
 
 	function deleteConversation(id: string) {
@@ -276,6 +283,8 @@
 		streamEvents.length = 0;
 		busy                = true;
 		rawLog.length       = 0;
+		await focusInput();
+		await scrollThreadToBottom();
 
 		// Reset between tool-call iterations: each provider generator run
 		// starts at index 0, so we must clear the map when a tool_calls round ends.
@@ -337,6 +346,7 @@
 
 					if (chunk.error) {
 						streamEvents.push({ kind: 'error', message: chunk.error.message });
+						await scrollThreadToBottom();
 						continue;
 					}
 
@@ -348,6 +358,7 @@
 						} else {
 							streamEvents.push({ kind: 'text', content: chunk.delta.content });
 						}
+						await scrollThreadToBottom();
 					}
 
 					// Tool call deltas
@@ -359,6 +370,7 @@
 								toolBuf.set(tc.index, entry);
 								if (tc.name) {
 									streamEvents.push({ kind: 'tool', name: tc.name, args: tc.arguments ?? '' });
+									await scrollThreadToBottom();
 								}
 							} else {
 								if (tc.name)      existing.name  = tc.name;
@@ -385,6 +397,7 @@
 					// Show a notice when the server-side iteration cap is hit.
 					if (chunk.finish_reason === 'length') {
 						streamEvents.push({ kind: 'error', message: 'Max tool iterations reached — the model may need a more focused prompt.' });
+						await scrollThreadToBottom();
 					}
 				}
 			}
@@ -398,6 +411,8 @@
 			if (lastContent !== null) {
 				history.push({ role: 'assistant', content: lastContent });
 			}
+			await scrollThreadToBottom('smooth');
+			await focusInput();
 			// Save the conversation after message completes
 			saveCurrentConversation();
 		}
@@ -625,11 +640,11 @@
 	<!-- ── Input bar ── -->
 	<div class="input-bar">
 		<textarea
+			bind:this={inputEl}
 			bind:value={input}
 			onkeydown={onKey}
 			placeholder="Message — Enter to send, Shift+Enter for newline"
 			rows="2"
-			disabled={busy}
 		></textarea>
 		<button class="btn-send" onclick={() => void sendMessage()} disabled={busy || !input.trim()}>
 			{busy ? '…' : 'Send'}
@@ -641,7 +656,9 @@
 	.page {
 		display: flex;
 		flex-direction: column;
-		height: calc(100dvh - 5rem);
+		height: 100%;
+		min-height: 0;
+		overflow: hidden;
 		gap: 0.75rem;
 	}
 	@media (max-width: 680px) {
@@ -958,8 +975,10 @@
 		flex: 1;
 		display: grid;
 		grid-template-columns: 1fr;
+		grid-template-rows: minmax(0, 1fr);
 		gap: 0.75rem;
 		min-height: 0;
+		overflow: hidden;
 	}
 	.body.with-raw {
 		grid-template-columns: 1fr 320px;
@@ -967,12 +986,14 @@
 
 	/* ── Thread ── */
 	.thread {
+		flex: 1;
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
 		overflow-y: auto;
 		padding: 0.25rem 0.25rem 0.5rem;
 		scroll-behavior: smooth;
+		min-height: 0;
 	}
 	.empty {
 		margin: auto;
