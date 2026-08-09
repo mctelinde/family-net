@@ -142,13 +142,13 @@
 	.logout-btn:hover { border-color: #1a1a2e; color: #1a1a2e; }
 	.content { padding: 2.5rem 3rem; max-width: 900px; width: 100%; }
 	@media (max-width: 680px) {
-		.shell { grid-template-columns: 1fr; display: flex; flex-direction: column; height: 100dvh; }
+		.shell { grid-template-columns: 1fr; display: block; min-height: 100dvh; }
 		.sidebar { position: static; height: auto; padding: 0; }
 		.logo-row { margin-bottom: 0; }
 		.nav-toggle { display: flex; }
 		.nav-collapsible { overflow: hidden; max-height: 0; }
 		.nav-collapsible.expanded { max-height: none; padding-bottom: 0.75rem; }
 		.sidebar-top { padding-top: 0; }
-		.content { flex: 1; min-height: 0; overflow-y: auto; padding: 1.5rem 1.25rem; }
+		.content { overflow-y: visible; padding: 1.5rem 1.25rem; }
 	}
 </style>
