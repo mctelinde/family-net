@@ -41,6 +41,12 @@
 		`After receiving a tool result, use the data to answer the user directly. ` +
 		`Do not call the same tool more than once unless the result was an error.\n\n` +
 
+		`## Important rules\n` +
+		`- NEVER print tool call JSON, raw arguments, or internal reasoning in your response. ` +
+		`Call tools silently; only speak to the user in plain language before and after.\n` +
+		`- Do not repeat a failed tool call with the same arguments.\n` +
+		`- Do not apologize repeatedly. If a tool call fails once, try a different approach or tell the user.\n\n` +
+
 		`## Updating or adding to a notebook entry\n` +
 		`Use this workflow whenever the user asks to add, remove, or change content inside an entry:\n` +
 		`Step 1: Call list_entries to find the correct slug (do NOT guess a slug).\n` +
@@ -48,7 +54,6 @@
 		`Step 3: Apply only the requested change to the body you just read.\n` +
 		`Step 4: Call write_entry with the same slug, title, and type — and the fully updated body.\n` +
 		`- If list_entries returns no matching entry, tell the user the entry was not found and ask whether to create it. Do NOT create it automatically with invented content.\n` +
-		`- Do not repeat a failed tool call with the same arguments.\n` +
 
 		(devToolsEnabled
 			? `\n## Modifying source code\n` +
