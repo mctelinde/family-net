@@ -74,7 +74,7 @@
 			</div>
 		</nav>
 
-		<main class="content" onclick={navExpanded ? () => navExpanded = false : undefined}>
+		<main class="content">
 			{@render children()}
 		</main>
 	</div>
