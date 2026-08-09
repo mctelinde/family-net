@@ -646,7 +646,9 @@
 	}
 	@media (max-width: 680px) {
 		.page { 
-			height: calc(100dvh - 1.5rem - 1.5rem); 
+			flex: 1;
+			display: flex;
+			flex-direction: column;
 			gap: 0; 
 			padding: 0; 
 			box-sizing: border-box;
