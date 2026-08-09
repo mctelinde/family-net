@@ -82,7 +82,7 @@ export const NOTEBOOK_TOOLS: ToolDefinition[] = [
 					required: [],
 				},
 			},
-			required: ['title', 'type', 'body'],
+			required: ['title', 'type'],
 		},
 	},
 	{

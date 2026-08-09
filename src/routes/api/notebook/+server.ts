@@ -25,8 +25,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		data?: Record<string, unknown>;
 	};
 
-	if (!body.title || !body.type || body.body === undefined) {
-		error(400, 'title, type, and body are required');
+	if (!body.title || !body.type) {
+		error(400, 'title and type are required');
 	}
 
 	const slug = body.slug ?? slugify(body.title);
@@ -42,6 +42,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		...body.data,
 	};
 
-	await writeEntry(slug, frontmatter, body.body);
+	await writeEntry(slug, frontmatter, body.body ?? '');
 	return json({ slug }, { status: 201 });
 };
