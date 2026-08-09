@@ -675,7 +675,12 @@
 			padding: 0.25rem 0.25rem 0.5rem; 
 		}
 		.input-bar { 
-			flex-shrink: 0; 
+			flex-shrink: 0;
+			position: sticky;
+			bottom: 0;
+			background: #fff;
+			padding: 0.5rem 0;
+			border-top: 1px solid #e5e3de;
 		}
 	}
 
