@@ -642,7 +642,6 @@
 		.page { height: auto; gap: 0.5rem; }
 		.body { display: block; flex: none; }
 		.thread { overflow-y: visible; max-height: none; }
-		.input-bar { position: sticky; bottom: 0; background: #f7f6f3; padding-bottom: 0.5rem; z-index: 10; }
 	}
 
 	/* ── Modal ── */
