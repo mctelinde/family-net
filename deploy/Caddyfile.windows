@@ -1,0 +1,22 @@
+# Caddyfile for Family Net (Windows host)
+# Tailscale runs on Windows — cert is issued via `tailscale cert` (the Tailscale
+# TLS issuer in Caddy can't reach tailscaled over Windows's named pipe).
+# The app runs in WSL2 on localhost:3000 (WSL localhost forwarding).
+
+white-knight.tail0d05f6.ts.net {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000 {
+		header_up -X-Forwarded-Proto
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	tls C:\ProgramData\Caddy\tailscale\white-knight.crt C:\ProgramData\Caddy\tailscale\white-knight.key
+
+	log {
+		output file C:/ProgramData/Caddy/logs/family-net.log {
+			roll_size 50mb
+			roll_keep 5
+			roll_keep_for 30d
+		}
+	}
+}

@@ -645,10 +645,10 @@
 		gap: 0.75rem;
 	}
 	@media (max-width: 680px) {
-		.page { display: block; height: auto; gap: 0.5rem; }
-		.body { display: block; }
-		.thread { overflow-y: visible; max-height: none; }
-		textarea { font-size: 1rem; }
+		.page { height: 100dvh; gap: 0.5rem; padding: 0.5rem; }
+		.body { flex: 1; overflow-y: auto; }
+		.thread { overflow-y: auto; max-height: none; }
+		.input-bar { flex-shrink: 0; margin-top: 0.5rem; }
 	}
 
 	/* ── Modal ── */
@@ -714,7 +714,7 @@
 		border-radius: 8px;
 		padding: 0.75rem;
 		font-family: inherit;
-		font-size: 0.82rem;
+		font-size: 1rem;
 		color: #1a1a2e;
 		line-height: 1.5;
 		background: transparent;
@@ -1152,7 +1152,7 @@
 		border-radius: 10px;
 		padding: 0.65rem 0.85rem;
 		font-family: inherit;
-		font-size: 0.88rem;
+		font-size: 1rem;
 		color: #1a1a2e;
 		background: #fff;
 		line-height: 1.5;

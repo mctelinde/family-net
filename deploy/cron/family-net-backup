@@ -1,0 +1,4 @@
+# Daily tar.gz of /home/appuser/family-net/data, 14-day retention.
+# Off-peak hour (3:23 AM) and a deterministic minute that doesn't collide with
+# the standard :00 / :30 cron slots.
+23 3 * * * appuser /usr/local/bin/family-net-backup.sh >> /home/appuser/backups/backup.log 2>&1
