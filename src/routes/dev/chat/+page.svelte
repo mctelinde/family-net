@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { marked } from 'marked';
 	import type { PageData } from './$types';
-	import { Settings, SquarePen } from 'lucide-svelte';
+	import { Settings, SquarePen, Clock } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
 	const { devToolsEnabled } = data;
@@ -39,20 +39,31 @@
 		`You are a helpful assistant for the Family Net notebook app. ` +
 		`When answering questions about entries, use the provided tools to look them up. ` +
 		`After receiving a tool result, use the data to answer the user directly. ` +
-		`Do not call the same tool more than once unless the result was an error.` +
+		`Do not call the same tool more than once unless the result was an error.\n\n` +
+
+		`## Updating or adding to a notebook entry\n` +
+		`Use this workflow whenever the user asks to add, remove, or change content inside an entry:\n` +
+		`Step 1: Call list_entries to find the correct slug (do NOT guess a slug).\n` +
+		`Step 2: Call read_entry with that slug to get the current body. NEVER invent or assume content.\n` +
+		`Step 3: Apply only the requested change to the body you just read.\n` +
+		`Step 4: Call write_entry with the same slug, title, and type — and the fully updated body.\n` +
+		`- If list_entries returns no matching entry, tell the user the entry was not found and ask whether to create it. Do NOT create it automatically with invented content.\n` +
+		`- Do not repeat a failed tool call with the same arguments.\n` +
+
 		(devToolsEnabled
-			? `\n\nFor code modifications, follow this sequence:\n` +
+			? `\n## Modifying source code\n` +
+			  `Use this workflow ONLY when the user asks to change application code or files — NOT for notebook entries:\n` +
 			  `Step 1: Call read_file on ARCHITECTURE.md\n` +
-			  `Step 2: Call read_file on the file that needs to change\n` +
+			  `Step 2: Call read_file on the source file that needs to change\n` +
 			  `Step 3: Check whether the requested change is already present in the file.\n` +
 			  `  - If the change is already done, tell the user and STOP. Do not call any more tools.\n` +
-			  `  - If the change is NOT done, call patch_file using line_number mode: specify the line_number and use patch_content starting with "-" to delete a line.\n\n` +
+			  `  - If the change is NOT done, call patch_file to apply it.\n\n` +
 			  `Rules:\n` +
 			  `- NEVER write to ARCHITECTURE.md\n` +
 			  `- Do not describe or show code — just execute the steps\n` +
 			  `- Do not repeat a failed tool call with the same arguments\n` +
-			  `- Prefer patch_file line_number mode over find-replace or write_file\n\n` +
-			  `Tools: read_file, write_file, patch_file, run_command, search_files, list_dir`
+			  `- Prefer patch_file find-replace mode (old/new) over line_number mode\n\n` +
+			  `Dev tools: read_file, write_file, patch_file, run_command, search_files, list_dir`
 			: '');
 
 
@@ -409,8 +420,9 @@
 				class:active={showHistory}
 				onclick={() => (showHistory = !showHistory)}
 				title="Browse past conversations"
+				aria-label="Browse past conversations"
 			>
-				History {#if savedConversations.length > 0}<span class="badge">{savedConversations.length}</span>{/if}
+				<Clock size={16} aria-hidden="true" />{#if savedConversations.length > 0}<span class="badge">{savedConversations.length}</span>{/if}
 			</button>
 			<button
 				class="btn-ghost"
