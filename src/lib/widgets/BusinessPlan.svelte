@@ -76,7 +76,7 @@
 	header {
 		margin-bottom: 2rem;
 		padding-bottom: 1.25rem;
-		border-bottom: 1px solid #e5e3de;
+		border-bottom: 1px solid var(--border);
 	}
 
 	.title-row {
@@ -87,8 +87,8 @@
 	}
 
 	.badge {
-		background: #1a1a2e;
-		color: #fff;
+		background: var(--text-primary);
+		color: var(--bg);
 		font-size: 0.7rem;
 		font-weight: 700;
 		letter-spacing: 0.08em;
@@ -99,15 +99,15 @@
 
 	.stage {
 		font-size: 0.75rem;
-		color: #6b6b80;
+		color: var(--text-tertiary);
 		font-weight: 600;
 	}
 
-	h1 { margin: 0 0 0.5rem; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; color: #1a1a2e; }
+	h1 { margin: 0 0 0.5rem; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; color: var(--text-primary); }
 
 	.mission {
 		margin: 0 0 0.75rem;
-		color: #3d3d4d;
+		color: var(--text-secondary);
 		font-size: 1rem;
 		font-style: italic;
 		line-height: 1.5;
@@ -115,10 +115,10 @@
 
 	.tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
 	.tag { padding: 0.2rem 0.6rem; background: #eff6ff; color: #2563eb; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
-	.meta { margin: 0; font-size: 0.8rem; color: #9b9baa; }
+	.meta { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
 
 	.milestones { margin-bottom: 1.75rem; }
-	.milestones h2 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #9b9baa; margin: 0 0 0.75rem; }
+	.milestones h2 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 0 0 0.75rem; }
 
 	ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 
@@ -127,13 +127,13 @@
 		align-items: center;
 		gap: 0.65rem;
 		padding: 0.6rem 0.85rem;
-		background: #fafaf8;
-		border: 1px solid #e5e3de;
+		background: var(--surface-alt);
+		border: 1px solid var(--border);
 		border-radius: 8px;
 	}
 
 	.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-	.milestone-name { flex: 1; font-size: 0.9rem; color: #1a1a2e; }
-	.milestone-date { font-size: 0.78rem; color: #9b9baa; }
+	.milestone-name { flex: 1; font-size: 0.9rem; color: var(--text-primary); }
+	.milestone-date { font-size: 0.78rem; color: var(--text-muted); }
 
 </style>

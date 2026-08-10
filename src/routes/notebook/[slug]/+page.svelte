@@ -26,15 +26,15 @@
 		align-items: center;
 		gap: 0.5rem;
 		font-size: 0.8rem;
-		color: #9b9baa;
+		color: var(--text-muted);
 		margin-bottom: 1.75rem;
 	}
 
 	.breadcrumb a {
-		color: #6b6b80;
+		color: var(--text-tertiary);
 		text-decoration: none;
 		transition: color 0.12s;
 	}
 
-	.breadcrumb a:hover { color: #1a1a2e; }
+	.breadcrumb a:hover { color: var(--text-primary); }
 </style>

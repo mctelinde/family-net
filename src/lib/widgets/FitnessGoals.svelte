@@ -67,7 +67,7 @@
 <style>
 	.widget-fitness { max-width: 720px; }
 
-	header { margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid #e5e3de; }
+	header { margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
 
 	.badge {
 		display: inline-block;
@@ -82,30 +82,30 @@
 		margin-bottom: 0.4rem;
 	}
 
-	h1 { margin: 0 0 0.5rem; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; color: #1a1a2e; }
+	h1 { margin: 0 0 0.5rem; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; color: var(--text-primary); }
 	.tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
 	.tag { padding: 0.2rem 0.6rem; background: #dcfce7; color: #16a34a; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
-	.meta { margin: 0; font-size: 0.8rem; color: #9b9baa; }
+	.meta { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
 
 	.goals { margin-bottom: 1.75rem; }
-	.goals h2 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #9b9baa; margin: 0 0 0.75rem; }
+	.goals h2 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 0 0 0.75rem; }
 
 	.goal-card {
-		background: #fafaf8;
-		border: 1px solid #e5e3de;
+		background: var(--surface-alt);
+		border: 1px solid var(--border);
 		border-radius: 10px;
 		padding: 0.85rem 1rem;
 		margin-bottom: 0.65rem;
 	}
 
 	.goal-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; }
-	.goal-name { font-weight: 600; color: #1a1a2e; font-size: 0.9rem; }
-	.goal-value { font-size: 0.82rem; color: #6b6b80; }
+	.goal-name { font-weight: 600; color: var(--text-primary); font-size: 0.9rem; }
+	.goal-value { font-size: 0.82rem; color: var(--text-tertiary); }
 
-	.bar-track { height: 8px; background: #e5e3de; border-radius: 99px; overflow: hidden; }
+	.bar-track { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
 	.bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s; }
 
 	.goal-footer { display: flex; justify-content: space-between; margin-top: 0.35rem; }
-	.pct { font-size: 0.78rem; font-weight: 700; color: #4f46e5; }
-	.deadline { font-size: 0.78rem; color: #9b9baa; }
+	.pct { font-size: 0.78rem; font-weight: 700; color: var(--accent); }
+	.deadline { font-size: 0.78rem; color: var(--text-muted); }
 </style>

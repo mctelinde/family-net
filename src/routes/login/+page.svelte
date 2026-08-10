@@ -55,18 +55,18 @@
 		min-height: 100dvh;
 		display: grid;
 		place-items: center;
-		background: #f7f6f3;
+		background: var(--bg);
 		padding: 1rem;
 	}
 
 	.card {
 		width: 100%;
 		max-width: 380px;
-		background: #fff;
-		border: 1px solid #e5e3de;
+		background: var(--surface);
+		border: 1px solid var(--border);
 		border-radius: 16px;
 		padding: 2.5rem 2rem;
-		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+		box-shadow: 0 4px 24px var(--shadow-color);
 	}
 
 	.logo {
@@ -81,8 +81,8 @@
 		place-items: center;
 		width: 36px;
 		height: 36px;
-		background: #1a1a2e;
-		color: #fff;
+		background: var(--text-primary);
+		color: var(--bg);
 		border-radius: 8px;
 		font-size: 0.8rem;
 		font-weight: 700;
@@ -92,26 +92,26 @@
 	.logo-text {
 		font-weight: 600;
 		font-size: 1rem;
-		color: #1a1a2e;
+		color: var(--text-primary);
 	}
 
 	h1 {
 		margin: 0 0 0.25rem;
 		font-size: 1.5rem;
 		font-weight: 700;
-		color: #1a1a2e;
+		color: var(--text-primary);
 	}
 
 	.subtitle {
 		margin: 0 0 1.5rem;
-		color: #6b6b80;
+		color: var(--text-tertiary);
 		font-size: 0.9rem;
 	}
 
 	.alert {
-		background: #fff1f0;
-		border: 1px solid #fca5a5;
-		color: #c0392b;
+		background: var(--danger-bg);
+		border: 1px solid var(--danger-border);
+		color: var(--danger);
 		border-radius: 8px;
 		padding: 0.65rem 0.9rem;
 		font-size: 0.875rem;
@@ -133,30 +133,30 @@
 	label span {
 		font-size: 0.825rem;
 		font-weight: 600;
-		color: #3d3d4d;
+		color: var(--text-secondary);
 	}
 
 	input {
 		padding: 0.65rem 0.85rem;
-		border: 1px solid #d4d2cc;
+		border: 1px solid var(--border-strong);
 		border-radius: 8px;
 		font-size: 0.95rem;
 		outline: none;
 		transition: border-color 0.15s;
-		color: #1a1a2e;
-		background: #fafaf8;
+		color: var(--text-primary);
+		background: var(--surface-alt);
 	}
 
 	input:focus {
-		border-color: #4f46e5;
-		background: #fff;
+		border-color: var(--accent);
+		background: var(--surface);
 	}
 
 	button {
 		margin-top: 0.25rem;
 		padding: 0.75rem;
-		background: #1a1a2e;
-		color: #fff;
+		background: var(--text-primary);
+		color: var(--bg);
 		border: none;
 		border-radius: 8px;
 		font-size: 0.95rem;
@@ -166,6 +166,7 @@
 	}
 
 	button:hover {
-		background: #2d2d4a;
+		background: var(--accent);
+		color: #fff;
 	}
 </style>

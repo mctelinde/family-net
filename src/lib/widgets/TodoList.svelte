@@ -256,14 +256,14 @@
 	header {
 		margin-bottom: 2rem;
 		padding-bottom: 1.25rem;
-		border-bottom: 1px solid #e5e3de;
+		border-bottom: 1px solid var(--border);
 	}
 
 	h1 {
 		margin: 0 0 0.5rem;
 		font-size: clamp(1.4rem, 3vw, 2rem);
 		font-weight: 700;
-		color: #1a1a2e;
+		color: var(--text-primary);
 		line-height: 1.25;
 	}
 
@@ -276,8 +276,8 @@
 
 	.tag {
 		padding: 0.2rem 0.6rem;
-		background: #f0eff9;
-		color: #4f46e5;
+		background: var(--accent-soft-bg);
+		color: var(--accent);
 		border-radius: 99px;
 		font-size: 0.75rem;
 		font-weight: 600;
@@ -286,15 +286,15 @@
 	.meta {
 		margin: 0;
 		font-size: 0.8rem;
-		color: #9b9baa;
+		color: var(--text-muted);
 	}
 
 	.error-message {
 		padding: 0.75rem 1rem;
-		background: #fee2e2;
-		border: 1px solid #fecaca;
+		background: var(--danger-bg);
+		border: 1px solid var(--danger-border);
 		border-radius: 6px;
-		color: #dc2626;
+		color: var(--danger);
 		font-size: 0.9rem;
 		margin-bottom: 1rem;
 	}
@@ -302,9 +302,9 @@
 	.add-todo {
 		margin-bottom: 2rem;
 		padding: 1rem;
-		background: #fafaf8;
+		background: var(--surface-alt);
 		border-radius: 8px;
-		border: 1px solid #e5e3de;
+		border: 1px solid var(--border);
 	}
 
 	.add-form {
@@ -317,38 +317,38 @@
 		flex: 1;
 		min-width: 200px;
 		padding: 0.75rem 1rem;
-		border: 1px solid #d9d6cf;
+		border: 1px solid var(--border-strong);
 		border-radius: 6px;
 		font-size: 0.95rem;
 		font-family: inherit;
-		color: #1a1a2e;
-		background: #fff;
+		color: var(--text-primary);
+		background: var(--surface);
 	}
 
 	.add-input::placeholder {
-		color: #9b9baa;
+		color: var(--text-muted);
 	}
 
 	.add-input:focus {
 		outline: none;
-		border-color: #4f46e5;
+		border-color: var(--accent);
 		box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
 	}
 
 	.recurring-select {
 		padding: 0.75rem 0.75rem;
-		border: 1px solid #d9d6cf;
+		border: 1px solid var(--border-strong);
 		border-radius: 6px;
 		font-size: 0.9rem;
 		font-family: inherit;
-		color: #1a1a2e;
-		background: #fff;
+		color: var(--text-primary);
+		background: var(--surface);
 		cursor: pointer;
 	}
 
 	.recurring-select:focus {
 		outline: none;
-		border-color: #4f46e5;
+		border-color: var(--accent);
 		box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
 	}
 
@@ -357,7 +357,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.75rem 1.25rem;
-		background: #4f46e5;
+		background: var(--accent);
 		color: #fff;
 		border: none;
 		border-radius: 6px;
@@ -368,7 +368,7 @@
 	}
 
 	.add-btn:hover:not(:disabled) {
-		background: #4338ca;
+		background: var(--accent-hover);
 	}
 
 	.add-btn:disabled {
@@ -395,16 +395,16 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
-		color: #1a1a2e;
+		color: var(--text-primary);
 	}
 
 	.section-header.completed h2 {
-		color: #6b7280;
+		color: var(--text-tertiary);
 	}
 
 	.count {
 		padding: 0.2rem 0.6rem;
-		background: #4f46e5;
+		background: var(--accent);
 		color: #fff;
 		border-radius: 99px;
 		font-size: 0.75rem;
@@ -412,7 +412,7 @@
 	}
 
 	.section-header.completed .count {
-		background: #9ca3af;
+		background: var(--text-faint);
 	}
 
 	.todos {
@@ -429,24 +429,24 @@
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.75rem 0.85rem;
-		background: #fff;
-		border: 1px solid #e5e3de;
+		background: var(--surface);
+		border: 1px solid var(--border);
 		border-radius: 6px;
 		transition: background 0.12s, border-color 0.12s;
 	}
 
 	.todo-item:hover {
-		background: #fafaf8;
-		border-color: #d9d6cf;
+		background: var(--surface-alt);
+		border-color: var(--border-strong);
 	}
 
 	.todo-item.completed {
-		background: #f3f4f6;
-		border-color: #e5e7eb;
+		background: var(--surface-alt);
+		border-color: var(--border);
 	}
 
 	.todo-item.completed .todo-text {
-		color: #9ca3af;
+		color: var(--text-faint);
 		text-decoration: line-through;
 	}
 
@@ -454,7 +454,7 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		color: #4f46e5;
+		color: var(--accent);
 		padding: 0;
 		display: flex;
 		align-items: center;
@@ -464,7 +464,7 @@
 	}
 
 	.checkbox:hover {
-		color: #4338ca;
+		color: var(--accent-hover);
 	}
 
 	.todo-item.completed .checkbox {
@@ -474,7 +474,7 @@
 	.todo-text {
 		flex: 1;
 		font-size: 0.95rem;
-		color: #1a1a2e;
+		color: var(--text-primary);
 		word-break: break-word;
 	}
 
@@ -509,7 +509,7 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		color: #9ca3af;
+		color: var(--text-faint);
 		padding: 0.25rem;
 		display: flex;
 		align-items: center;
@@ -525,7 +525,7 @@
 	.empty-state {
 		padding: 2rem 1rem;
 		text-align: center;
-		color: #9b9baa;
+		color: var(--text-muted);
 	}
 
 	.empty-state p {

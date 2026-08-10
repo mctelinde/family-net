@@ -70,20 +70,20 @@
 	.page { width: 100%; }
 	.page-header { margin-bottom: 2rem; }
 	h1 { margin: 0 0 0.25rem; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; }
-	.subtitle { margin: 0; color: #9b9baa; font-size: 0.875rem; }
-	.empty { background: #fafaf8; border: 1px dashed #d4d2cc; border-radius: 12px; padding: 3rem 2rem; text-align: center; color: #6b6b80; }
+	.subtitle { margin: 0; color: var(--text-muted); font-size: 0.875rem; }
+	.empty { background: var(--surface-alt); border: 1px dashed var(--border-strong); border-radius: 12px; padding: 3rem 2rem; text-align: center; color: var(--text-tertiary); }
 	.empty p { margin: 0 0 0.5rem; }
 	.hint { font-size: 0.875rem; }
-	.hint a { color: #4f46e5; }
-	.hint code { background: #f0eff9; padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.875em; }
+	.hint a { color: var(--accent); }
+	.hint code { background: var(--accent-soft-bg); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.875em; }
 	.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
-	.card { display: flex; flex-direction: column; gap: 0.5rem; background: #fff; border: 1px solid #e5e3de; border-radius: 12px; padding: 1.25rem; text-decoration: none; color: inherit; transition: box-shadow 0.15s, border-color 0.15s; }
-	.card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: #c4c4cf; }
+	.card { display: flex; flex-direction: column; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; text-decoration: none; color: inherit; transition: box-shadow 0.15s, border-color 0.15s; }
+	.card:hover { box-shadow: 0 4px 16px var(--shadow-color-strong); border-color: var(--border-strong); }
 	.card-top { display: flex; align-items: center; justify-content: space-between; }
 	.type-badge { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 4px; }
 	.private-badge { font-size: 0.75rem; }
-	.card-title { margin: 0; font-size: 1rem; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
+	.card-title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
 	.card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-	.tag { padding: 0.15rem 0.5rem; background: #f0eff9; color: #6b6b80; border-radius: 99px; font-size: 0.72rem; }
-	.card-meta { margin: 0; font-size: 0.75rem; color: #c4c4cf; margin-top: auto; padding-top: 0.25rem; }
+	.tag { padding: 0.15rem 0.5rem; background: var(--accent-soft-bg); color: var(--text-tertiary); border-radius: 99px; font-size: 0.72rem; }
+	.card-meta { margin: 0; font-size: 0.75rem; color: var(--text-faint); margin-top: auto; padding-top: 0.25rem; }
 </style>
