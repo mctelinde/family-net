@@ -19,6 +19,9 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+	<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />
 </svelte:head>
 
 {#if isAuth}
@@ -26,9 +29,19 @@
 		<nav class="sidebar">
 			<div class="logo-row">
 				<a href="/" class="logo">
-					<span class="logo-mark">FN</span>
-					<span class="logo-text">Family Net</span>
+					<span class="logo-mark">TN</span>
+					<span class="logo-text">TeliNet</span>
 				</a>
+				{#if dev || user?.role === 'admin'}
+					<a href="/dev/chat" class="chat-shortcut" aria-label="Chat">
+						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+							<circle cx="8" cy="12" r="1" fill="currentColor" stroke="none"/>
+							<circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
+							<circle cx="16" cy="12" r="1" fill="currentColor" stroke="none"/>
+						</svg>
+					</a>
+				{/if}
 				<ThemeToggle />
 				<button
 					class="nav-toggle"
@@ -184,7 +197,9 @@
 	.sidebar-top { flex: 1; padding: 0 1rem; }
 	.logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; flex: 1; }
 	.logo-mark { display: grid; place-items: center; width: 32px; height: 32px; background: var(--text-primary); color: var(--bg); border-radius: 7px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; }
-	.logo-text { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+	.logo-text { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 1.05rem; letter-spacing: 0.01em; color: var(--text-primary); }
+	.chat-shortcut { display: none; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 7px; color: var(--text-tertiary); text-decoration: none; transition: background 0.12s, color 0.12s; }
+	.chat-shortcut:hover { background: var(--surface-hover); color: var(--text-primary); }
 	.nav-toggle { display: none; background: none; border: none; padding: 0.25rem; cursor: pointer; color: var(--text-tertiary); border-radius: 5px; line-height: 0; }
 	.nav-toggle:hover { background: var(--surface-hover); color: var(--text-primary); }
 	.hamburger { display: flex; flex-direction: column; justify-content: space-between; width: 18px; height: 14px; }
@@ -211,6 +226,7 @@
 		.sidebar { position: sticky; top: 0; height: auto; padding: 0; z-index: 100; border-right: none; border-bottom: 1px solid var(--border); }
 		.logo-row { margin-bottom: 0; }
 		.nav-toggle { display: flex; }
+		.chat-shortcut { display: flex; }
 		.nav-collapsible { overflow: hidden; max-height: 0; }
 		.nav-collapsible.expanded { max-height: none; padding-bottom: 0.75rem; }
 		.sidebar-top { padding-top: 0; }

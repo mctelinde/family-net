@@ -5,14 +5,14 @@
 </script>
 
 <svelte:head>
-	<title>Sign in · Family Net</title>
+	<title>Sign in · TeliNet</title>
 </svelte:head>
 
 <div class="page">
 	<div class="card">
 		<div class="logo">
-			<span class="logo-mark">FN</span>
-			<span class="logo-text">Family Net</span>
+			<span class="logo-mark">TN</span>
+			<span class="logo-text">TeliNet</span>
 		</div>
 
 		<h1>Welcome back</h1>
@@ -90,8 +90,10 @@
 	}
 
 	.logo-text {
+		font-family: 'Fraunces', Georgia, serif;
 		font-weight: 600;
-		font-size: 1rem;
+		font-size: 1.1rem;
+		letter-spacing: 0.01em;
 		color: var(--text-primary);
 	}
 

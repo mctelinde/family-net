@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<title>Family Net</title>
+	<title>TeliNet</title>
 </svelte:head>
 
 <div class="page">

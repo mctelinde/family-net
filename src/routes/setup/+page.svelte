@@ -5,14 +5,14 @@
 </script>
 
 <svelte:head>
-	<title>Setup · Family Net</title>
+	<title>Setup · TeliNet</title>
 </svelte:head>
 
 <div class="page">
 	<div class="card">
 		<div class="logo">
-			<span class="logo-mark">FN</span>
-			<span class="logo-text">Family Net</span>
+			<span class="logo-mark">TN</span>
+			<span class="logo-text">TeliNet</span>
 		</div>
 
 		<h1>Create your account</h1>
@@ -68,7 +68,7 @@
 		background: var(--text-primary); color: var(--bg);
 		border-radius: 8px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.05em;
 	}
-	.logo-text { font-weight: 600; font-size: 1rem; color: var(--text-primary); }
+	.logo-text { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 1.1rem; letter-spacing: 0.01em; color: var(--text-primary); }
 	h1 { margin: 0 0 0.25rem; font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
 	.subtitle { margin: 0 0 1.5rem; color: var(--text-tertiary); font-size: 0.9rem; }
 	.alert { background: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--danger); border-radius: 8px; padding: 0.65rem 0.9rem; font-size: 0.875rem; margin-bottom: 1rem; }
