@@ -1,0 +1,4 @@
+# Allow appuser to restart/stop/start only the family-net service,
+# with no other sudo privileges. Required by deploy/update.sh, which
+# runs as appuser and needs to bounce the systemd unit after a deploy.
+appuser ALL=(root) NOPASSWD: /usr/bin/systemctl restart family-net, /usr/bin/systemctl stop family-net, /usr/bin/systemctl start family-net

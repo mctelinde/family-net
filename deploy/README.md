@@ -6,12 +6,13 @@ Layout:
 
 ```
 deploy/
-├── README.md                  # this file
-├── Caddyfile                  # reverse proxy → the app on 127.0.0.1:3000
-├── update.sh                  # pull, build, atomic swap, health-check, rollback
-├── family-net-backup.sh       # daily tar.gz of data/
-├── cron/family-net-backup     # /etc/cron.d entry, runs at 03:23 daily
-└── systemd/family-net.service # /etc/systemd/system unit (overrides)
+├── README.md                          # this file
+├── Caddyfile                          # reverse proxy → the app on 127.0.0.1:3000
+├── update.sh                          # pull, build, atomic swap, health-check, rollback
+├── family-net-backup.sh               # daily tar.gz of data/
+├── cron/family-net-backup             # /etc/cron.d entry, runs at 03:23 daily
+├── sudoers.d/appuser-family-net       # lets appuser restart family-net without a password
+└── systemd/family-net.service         # /etc/systemd/system unit (overrides)
 ```
 
 ## Architecture
@@ -40,6 +41,7 @@ Tailscale is the only path in — no public DNS, no inbound ports.
 | `deploy/Caddyfile`                        | `/etc/caddy/Caddyfile`                 |
 | `deploy/family-net-backup.sh`             | `/usr/local/bin/family-net-backup.sh`  |
 | `deploy/cron/family-net-backup`           | `/etc/cron.d/family-net-backup`        |
+| `deploy/sudoers.d/appuser-family-net`     | `/etc/sudoers.d/appuser-family-net`    |
 
 `scripts/setup.sh` does the copying and is idempotent.
 
@@ -91,3 +93,4 @@ cat /tmp/restore-test/users.json | python3 -m json.tool | head
 - `HOST=127.0.0.1` in `.env` ensures the app is never reachable from the LAN directly — only via Caddy. No Windows Firewall rules for port 3000 needed.
 - `NODE_ENV=production` is set by the systemd unit, not `.env` (SvelteKit forbids `NODE_ENV` in `.env`). This is what enables the production server mode in adapter-node and the `secure` cookie flag.
 - `SESSION_SECRET` is 32 hex chars; `AGENT_API_KEY` is 24 hex chars. Rotate both if they're ever exposed.
+- `appuser` has a scoped, passwordless sudo rule (`/etc/sudoers.d/appuser-family-net`) limited to `systemctl restart|stop|start family-net` — nothing else. This is what lets `deploy/update.sh` bounce the service without a login shell. Verify it with `sudo -u appuser sudo -n systemctl restart family-net`.

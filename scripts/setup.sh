@@ -92,6 +92,12 @@ install_backup() {
 	install -m 0644 "$APP_DIR/deploy/cron/family-net-backup" /etc/cron.d/family-net-backup
 }
 
+install_sudoers() {
+	echo "→ installing sudoers rule (appuser can restart family-net without a password)"
+	install -m 0440 "$APP_DIR/deploy/sudoers.d/appuser-family-net" /etc/sudoers.d/appuser-family-net
+	visudo -cf /etc/sudoers.d/appuser-family-net
+}
+
 make_executable() {
 	# Ensure repo scripts are executable in place
 	chmod +x "$APP_DIR/deploy/update.sh" "$APP_DIR/deploy/family-net-backup.sh"
@@ -107,6 +113,7 @@ main() {
 	install_unit
 	install_caddy
 	install_backup
+	install_sudoers
 
 	echo ""
 	echo "✔ installation complete"
