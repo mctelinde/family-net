@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { LayoutData } from "./$types";
 	import favicon from "$lib/assets/favicon.svg";
+	import logo from "$lib/assets/logo.png";
 	import { dev } from '$app/environment';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
@@ -29,7 +30,7 @@
 		<nav class="sidebar">
 			<div class="logo-row">
 				<a href="/" class="logo">
-					<span class="logo-mark">TN</span>
+					<img class="logo-mark" src={logo} alt="TeliNet logo" />
 					<span class="logo-text">TeliNet</span>
 				</a>
 				{#if dev || user?.role === 'admin'}
@@ -196,7 +197,8 @@
 	.logo-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 1rem; }
 	.sidebar-top { flex: 1; padding: 0 1rem; }
 	.logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; flex: 1; }
-	.logo-mark { display: grid; place-items: center; width: 32px; height: 32px; background: var(--text-primary); color: var(--bg); border-radius: 7px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; }
+	.logo-mark { display: block; width: 32px; height: 32px; object-fit: contain; border-radius: 7px; }
+	:global([data-theme='dark']) .logo-mark { filter: invert(1); }
 	.logo-text { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 1.05rem; letter-spacing: 0.01em; color: var(--text-primary); }
 	.chat-shortcut { display: none; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 7px; color: var(--text-tertiary); text-decoration: none; transition: background 0.12s, color 0.12s; }
 	.chat-shortcut:hover { background: var(--surface-hover); color: var(--text-primary); }

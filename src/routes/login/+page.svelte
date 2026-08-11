@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActionData } from './$types';
+	import logo from '$lib/assets/logo.png';
 
 	let { form }: { form: ActionData } = $props();
 </script>
@@ -11,7 +12,7 @@
 <div class="page">
 	<div class="card">
 		<div class="logo">
-			<span class="logo-mark">TN</span>
+			<img class="logo-mark" src={logo} alt="TeliNet logo" />
 			<span class="logo-text">TeliNet</span>
 		</div>
 
@@ -77,17 +78,14 @@
 	}
 
 	.logo-mark {
-		display: grid;
-		place-items: center;
+		display: block;
 		width: 36px;
 		height: 36px;
-		background: var(--text-primary);
-		color: var(--bg);
+		object-fit: contain;
 		border-radius: 8px;
-		font-size: 0.8rem;
-		font-weight: 700;
-		letter-spacing: 0.05em;
 	}
+
+	:global([data-theme='dark']) .logo-mark { filter: invert(1); }
 
 	.logo-text {
 		font-family: 'Fraunces', Georgia, serif;
