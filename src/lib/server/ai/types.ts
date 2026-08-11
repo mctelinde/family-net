@@ -67,6 +67,8 @@ export interface ChatChunk {
 	finish_reason?: 'stop' | 'tool_calls' | 'length' | 'timeout' | 'error';
 	message?: AssistantMessage; // populated on the terminal chunk
 	error?: { code: number; message: string };
+	/** Standalone, non-delta chunk: notebook entries auto-injected as context for this turn. */
+	context?: Array<{ slug: string; title: string; type: string; score: number }>;
 }
 
 export interface ChatResponse {

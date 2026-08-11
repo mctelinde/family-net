@@ -10,6 +10,7 @@ import type {
 	ToolCall,
 } from '$lib/server/ai/types';
 import { listEntries, readEntry, writeEntry, deleteEntry } from '$lib/server/storage';
+import { search } from '$lib/server/search';
 import { slugify } from '$lib/markdown';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -43,6 +44,67 @@ const done = (): string => `data: [DONE]\n\n`;
 
 const MAX_TOOL_ITERATIONS = 20;
 const STREAM_TIMEOUT_MS = 300_000; // 5 minutes — no Vercel ceiling, local Ollama can be slow
+
+const CONTEXT_MAX_ENTRIES = 3;
+const CONTEXT_MAX_CHARS_PER_ENTRY = 1_200;
+
+/**
+ * Auto-retrieve notebook entries relevant to the latest user message and
+ * build a system message with their content. This lets the model answer
+ * directly for common cases without needing to first call list_entries /
+ * read_entry — the tools remain available as a fallback for anything the
+ * search misses.
+ */
+interface NotebookContext {
+	message: ChatMessage;
+	entries: Array<{ slug: string; title: string; type: string; score: number }>;
+}
+
+async function buildNotebookContext(query: string): Promise<NotebookContext | null> {
+	const trimmed = query.trim();
+	if (!trimmed) return null;
+
+	let results;
+	try {
+		results = await search(trimmed, 'agent', true);
+	} catch {
+		return null;
+	}
+	if (results.length === 0) return null;
+
+	const top = results.slice(0, CONTEXT_MAX_ENTRIES);
+	const sections = await Promise.all(
+		top.map(async (r) => {
+			const entry = await readEntry(r.slug, 'agent', true);
+			const body = entry?.body ?? r.snippet;
+			const truncated =
+				body.length > CONTEXT_MAX_CHARS_PER_ENTRY
+					? body.slice(0, CONTEXT_MAX_CHARS_PER_ENTRY) + '…'
+					: body;
+			return `### ${r.title} (slug: ${r.slug}, type: ${r.type})\n${truncated}`;
+		})
+	);
+
+	return {
+		message: {
+			role: 'system',
+			content:
+				'## Relevant notebook context (auto-retrieved via search)\n' +
+				'These entries were matched against the latest message and may or may not be relevant — ' +
+				'ignore anything unrelated. You can still call list_entries/read_entry for anything not covered here ' +
+				'or to get the full, unabridged content of an entry.\n\n' +
+				sections.join('\n\n'),
+		},
+		entries: top.map((r) => ({ slug: r.slug, title: r.title, type: r.type, score: r.score })),
+	};
+}
+
+/** Insert a system message immediately before the most recent user message. */
+function insertContextMessage(messages: ChatMessage[], contextMsg: ChatMessage): ChatMessage[] {
+	const idx = messages.map((m) => m.role).lastIndexOf('user');
+	if (idx === -1) return [contextMsg, ...messages];
+	return [...messages.slice(0, idx), contextMsg, ...messages.slice(idx)];
+}
 
 /** Tool dispatch table — calls storage under the agent identity. */
 const dispatch: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {
@@ -388,11 +450,27 @@ export const POST: RequestHandler = async ({ request }) => {
 	void (async () => {
 		const writer = writable.getWriter();
 		try {
+			const lastUserMessage = [...incoming.messages].reverse().find((m) => m.role === 'user');
+			const notebookContext =
+				lastUserMessage && typeof lastUserMessage.content === 'string'
+					? await buildNotebookContext(lastUserMessage.content)
+					: null;
+			const messages = notebookContext
+				? insertContextMessage(incoming.messages, notebookContext.message)
+				: incoming.messages;
+
+			if (notebookContext) {
+				await safeWrite(
+					writer,
+					encoder.encode(encode({ delta: {}, context: notebookContext.entries }))
+				);
+			}
+
 			await runChatLoop({
 				provider,
 				writer,
 				encoder,
-				messages: incoming.messages,
+				messages,
 				model: incoming.model,
 				maxTokens: incoming.maxTokens,
 				temperature: incoming.temperature,

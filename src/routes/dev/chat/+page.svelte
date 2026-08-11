@@ -15,7 +15,10 @@
 	type TextEvent  = { kind: 'text';  content: string };
 	type ToolEvent  = { kind: 'tool';  name: string; args: string };
 	type ErrorEvent = { kind: 'error'; message: string };
-	type StreamEvent = TextEvent | ToolEvent | ErrorEvent;
+	type ContextEntry = { slug: string; title: string; type: string; score: number };
+	type ContextEvent = { kind: 'context'; entries: ContextEntry[] };
+	type StreamEvent = TextEvent | ToolEvent | ErrorEvent | ContextEvent;
+
 
 	type UserTurn      = { role: 'user'; text: string };
 	type AssistantTurn = { role: 'assistant'; events: StreamEvent[] };
@@ -253,6 +256,8 @@
 				md += ev.content + '\n\n';
 			} else if (ev.kind === 'tool') {
 				md += `**Tool: ${ev.name}**\n\`\`\`json\n${prettyArgs(ev.args)}\n\`\`\`\n\n`;
+			} else if (ev.kind === 'context') {
+				md += `**Auto-retrieved context:** ${ev.entries.map((e) => e.title).join(', ') || 'none'}\n\n`;
 			} else if (ev.kind === 'error') {
 				md += `⚠️ **Error:** ${ev.message}\n\n`;
 			}
@@ -339,6 +344,7 @@
 						finish_reason?: string;
 						message?: { content: string | null };
 						error?: { message: string };
+						context?: ContextEntry[];
 					};
 
 					let chunk: Chunk;
@@ -348,6 +354,12 @@
 						streamEvents.push({ kind: 'error', message: chunk.error.message });
 						await scrollThreadToBottom();
 						continue;
+					}
+
+					// Auto-retrieved notebook context (standalone, non-delta chunk).
+					if (chunk.context) {
+						streamEvents.push({ kind: 'context', entries: chunk.context });
+						await scrollThreadToBottom();
 					}
 
 					// Text delta — append to the last text event or create a new one
@@ -557,6 +569,28 @@
 										<pre class="tool-args">{prettyArgs(ev.args)}</pre>
 									{/if}
 								</div>
+							{:else if ev.kind === 'context'}
+								{@const key = `t${ti}e${ei}`}
+								<div class="tool-card context-card">
+									<button class="tool-header" onclick={() => toggleTool(key)}>
+										<span class="tool-icon">📓</span>
+										<span class="tool-label">
+											{#if ev.entries.length > 0}
+												Auto-context: {ev.entries.length} {ev.entries.length === 1 ? 'entry' : 'entries'} matched
+											{:else}
+												Auto-context: no matches
+											{/if}
+										</span>
+										<span class="tool-chevron">{expandedTools.has(key) ? '▾' : '▸'}</span>
+									</button>
+									{#if expandedTools.has(key)}
+										<ul class="context-entries">
+											{#each ev.entries as e}
+												<li><strong>{e.title}</strong> <span class="context-meta">({e.type}, slug: {e.slug}, score: {e.score.toFixed(2)})</span></li>
+											{/each}
+										</ul>
+									{/if}
+								</div>
 							{:else if ev.kind === 'error'}
 								<div class="error-msg">⚠ {ev.message}</div>
 							{/if}
@@ -584,6 +618,28 @@
 								</button>
 								{#if expandedTools.has(key)}
 									<pre class="tool-args">{prettyArgs(ev.args)}</pre>
+								{/if}
+							</div>
+						{:else if ev.kind === 'context'}
+							{@const key = `stream-${ei}`}
+							<div class="tool-card context-card">
+								<button class="tool-header" onclick={() => toggleTool(key)}>
+									<span class="tool-icon">📓</span>
+									<span class="tool-label">
+										{#if ev.entries.length > 0}
+											Auto-context: {ev.entries.length} {ev.entries.length === 1 ? 'entry' : 'entries'} matched
+										{:else}
+											Auto-context: no matches
+										{/if}
+									</span>
+									<span class="tool-chevron">{expandedTools.has(key) ? '▾' : '▸'}</span>
+								</button>
+								{#if expandedTools.has(key)}
+									<ul class="context-entries">
+										{#each ev.entries as e}
+											<li><strong>{e.title}</strong> <span class="context-meta">({e.type}, slug: {e.slug}, score: {e.score.toFixed(2)})</span></li>
+										{/each}
+									</ul>
 								{/if}
 							</div>
 						{:else if ev.kind === 'error'}
@@ -614,6 +670,28 @@
 									</button>
 									{#if expandedTools.has(key)}
 										<pre class="tool-args">{prettyArgs(ev.args)}</pre>
+									{/if}
+								</div>
+							{:else if ev.kind === 'context'}
+								{@const key = `overflow-${ei}`}
+								<div class="tool-card context-card">
+									<button class="tool-header" onclick={() => toggleTool(key)}>
+										<span class="tool-icon">📓</span>
+										<span class="tool-label">
+											{#if ev.entries.length > 0}
+												Auto-context: {ev.entries.length} {ev.entries.length === 1 ? 'entry' : 'entries'} matched
+											{:else}
+												Auto-context: no matches
+											{/if}
+										</span>
+										<span class="tool-chevron">{expandedTools.has(key) ? '▾' : '▸'}</span>
+									</button>
+									{#if expandedTools.has(key)}
+										<ul class="context-entries">
+											{#each ev.entries as e}
+												<li><strong>{e.title}</strong> <span class="context-meta">({e.type}, slug: {e.slug}, score: {e.score.toFixed(2)})</span></li>
+											{/each}
+										</ul>
 									{/if}
 								</div>
 							{:else if ev.kind === 'error'}
@@ -1152,6 +1230,34 @@
 		max-height: 240px;
 		overflow-y: auto;
 		font-family: 'ui-monospace', 'Cascadia Code', monospace;
+	}
+
+	/* ── Auto-context card (distinct accent from tool calls) ── */
+	.context-card {
+		border-left-color: #0891b2;
+	}
+	.context-card .tool-header {
+		background: rgba(8, 145, 178, 0.08);
+	}
+	.context-card .tool-header:hover {
+		background: rgba(8, 145, 178, 0.16);
+	}
+	.context-card .tool-icon,
+	.context-card .tool-label {
+		color: #0891b2;
+	}
+	.context-entries {
+		margin: 0;
+		padding: 0.45rem 0.6rem 0.45rem 1.4rem;
+		font-size: 0.78rem;
+		color: var(--text-secondary);
+	}
+	.context-entries li + li {
+		margin-top: 0.2rem;
+	}
+	.context-meta {
+		color: var(--text-tertiary);
+		font-size: 0.72rem;
 	}
 
 	/* ── Error ── */

@@ -155,7 +155,12 @@ export class OpenAIProvider implements AIProvider {
 
 		const reader = response.body.getReader();
 		let buf = '';
-		let contentStreamed = false; // true once any content delta has been forwarded to the client
+		// Length of contentBuf already forwarded to the client as content deltas.
+		// Anything beyond this is "pending" — held back until we're sure it isn't
+		// the start of a Hermes-style tool call block (raw JSON, <tool_call> tag,
+		// or a ```json code fence), so the client never sees the same tool call
+		// rendered both as prose text and as a tool-call card.
+		let streamedLen = 0;
 		try {
 			while (true) {
 				const { done, value } = await reader.read();
@@ -205,18 +210,20 @@ export class OpenAIProvider implements AIProvider {
 
 						if (typeof delta.content === 'string' && delta.content.length > 0) {
 							contentBuf += delta.content;
-								// Suppress content that looks like a Hermes tool call:
-								// - wrapped in <tool_call> tags
-								// - raw JSON starting with '{'
-								// - markdown code block (```json\n{...}\n```) starting with '`'
-								// The fallback flush at finish_reason emits the buffer as text
-								// if extractHermesToolCall returns null (not actually a tool call).
-								const suppress = contentBuf.includes('<tool_call>') ||
-									contentBuf.trimStart().startsWith('{') ||
-									contentBuf.trimStart().startsWith('`');
-								if (!suppress) {
-									out.delta.content = delta.content;
-									contentStreamed = true;
+								// Only the *unstreamed* tail is checked — once real prose has
+								// already been forwarded to the client, a Hermes tool call can
+								// still start partway through the message (e.g. "I'll look that
+								// up.\n{...}"). Holding back the pending suffix here (instead of
+								// checking contentBuf as a whole) stops that JSON from ever being
+								// shown as prose text before it's re-emitted as a tool_calls chunk.
+								const pending = contentBuf.slice(streamedLen);
+								const pendingStart = pending.trimStart();
+								const suppress = pendingStart.startsWith('<tool_call>') ||
+									pendingStart.startsWith('{') ||
+									pendingStart.startsWith('`');
+								if (!suppress && pending.length > 0) {
+									out.delta.content = pending;
+									streamedLen = contentBuf.length;
 								}
 							}
 
@@ -281,10 +288,12 @@ export class OpenAIProvider implements AIProvider {
 										yield { delta: {}, finish_reason: 'tool_calls' };
 										return;
 									}
-									// No Hermes block — if content was suppressed (never streamed),
-									// flush it now as a single text delta before the stop signal.
-									if (contentBuf && !contentStreamed) {
-										yield { delta: { content: contentBuf } };
+									// No Hermes block — flush whatever pending content was held
+									// back (on the chance it turned out to be a false alarm).
+									const pending = contentBuf.slice(streamedLen);
+									if (pending) {
+										yield { delta: { content: pending } };
+										streamedLen = contentBuf.length;
 									}
 								}
 
