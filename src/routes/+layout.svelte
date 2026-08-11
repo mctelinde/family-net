@@ -33,6 +33,12 @@
 					<img class="logo-mark" src={logo} alt="TeliNet logo" />
 					<span class="logo-text">TeliNet</span>
 				</a>
+				<a href="/search" class="search-shortcut" aria-label="Search">
+					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="11" cy="11" r="7"/>
+						<line x1="21" y1="21" x2="16.65" y2="16.65"/>
+					</svg>
+				</a>
 				{#if dev || user?.role === 'admin'}
 					<a href="/dev/chat" class="chat-shortcut" aria-label="Chat">
 						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -63,6 +69,7 @@
 					<div class="nav-section">
 						<span class="nav-label">Notebook</span>
 						<a href="/" class="nav-link" onclick={() => navExpanded = false}>All entries</a>
+						<a href="/search" class="nav-link" onclick={() => navExpanded = false}>Search</a>
 					</div>
 
 					<div class="nav-section">
@@ -200,8 +207,8 @@
 	.logo-mark { display: block; width: 32px; height: 32px; object-fit: contain; border-radius: 7px; }
 	:global([data-theme='dark']) .logo-mark { filter: invert(1); }
 	.logo-text { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 1.05rem; letter-spacing: 0.01em; color: var(--text-primary); }
-	.chat-shortcut { display: none; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 7px; color: var(--text-tertiary); text-decoration: none; transition: background 0.12s, color 0.12s; }
-	.chat-shortcut:hover { background: var(--surface-hover); color: var(--text-primary); }
+	.chat-shortcut, .search-shortcut { display: none; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 7px; color: var(--text-tertiary); text-decoration: none; transition: background 0.12s, color 0.12s; }
+	.chat-shortcut:hover, .search-shortcut:hover { background: var(--surface-hover); color: var(--text-primary); }
 	.nav-toggle { display: none; background: none; border: none; padding: 0.25rem; cursor: pointer; color: var(--text-tertiary); border-radius: 5px; line-height: 0; }
 	.nav-toggle:hover { background: var(--surface-hover); color: var(--text-primary); }
 	.hamburger { display: flex; flex-direction: column; justify-content: space-between; width: 18px; height: 14px; }
@@ -228,7 +235,7 @@
 		.sidebar { position: sticky; top: 0; height: auto; padding: 0; z-index: 100; border-right: none; border-bottom: 1px solid var(--border); }
 		.logo-row { margin-bottom: 0; }
 		.nav-toggle { display: flex; }
-		.chat-shortcut { display: flex; }
+		.chat-shortcut, .search-shortcut { display: flex; }
 		.nav-collapsible { overflow: hidden; max-height: 0; }
 		.nav-collapsible.expanded { max-height: none; padding-bottom: 0.75rem; }
 		.sidebar-top { padding-top: 0; }
